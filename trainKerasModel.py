@@ -4,6 +4,7 @@ from keras import optimizers
 from keras import callbacks
 
 from treeToArray import *
+from diagnosticPlotting import *
 
 from ROOT import TFile
 import numpy as np
@@ -77,6 +78,8 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
         callbacks = callbacks_list
     )
 
+    return model 
+
 
    
 if __name__ == '__main__':
@@ -120,5 +123,13 @@ if __name__ == '__main__':
     training_weights = training_weights[split_index : ]
     training_labels = training_labels[split_index : ]
 
-    trainDenseClassificationModel( training_data, training_labels, validation_data, validation_labels, training_weights, validation_weights, num_threads = 8, learning_rate = 0.001, dropoutFirst = False)
-
+    model = trainDenseClassificationModel( training_data, training_labels, validation_data, validation_labels, training_weights, validation_weights, num_threads = 8, learning_rate = 0.001, dropoutFirst = False, num_epochs = 1)
+    
+    signal_output = model.predict(  training_data_signal )
+    background_output = model.predict( training_data_background )
+    
+    eff_signal, eff_bkg = computeROC( signal_output, training_weights_signal, background_output, training_weights_background )
+    
+    plotROC( eff_signal, eff_bkg )
+    
+    print( 'ROC integral = {}'.format(areaUndeCurve( eff_signal, eff_bkg )	) )
