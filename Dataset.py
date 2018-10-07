@@ -4,6 +4,7 @@ Class that collects a numpy array of features, and the corresponding weight for 
 
 #import other parts of code 
 from treeToArray import treeToArray
+from trainKerasModel import trainDenseClassificationModel
 
 #import python libraries
 import numpy as np
@@ -12,6 +13,12 @@ import os.path
 #import ROOT classes 
 from ROOT import TFile
 from ROOT import TTree
+
+
+def randomlyShuffledIndices( array ):
+    indices = list( range( len( array ) ) )
+    np.random.shuffle( indices )
+    return indices 
 
 
 class Dataset:
@@ -26,9 +33,25 @@ class Dataset:
         self.weights = weights  
         self.labels = labels
     
-    def getDataset():
-        return self.samples, self.weights, self.labels
+    def getSamples:
+        return self.samples
+    
+    def getWeights:
+        return self.weights
 
+    def getLabels:
+        return self.labels
+
+    def __add__ (self, rhs):
+        samples = np.concatenate( self.samples, rhs.samples, axis = 0)
+        weights = np.concatenate( self.weights, rhs.weights, axis = 0)
+        labels = np.concatenate( self.labels, rhs.labels, axis = 0)
+        return Dataset(samples, weights, labels)
+
+
+def concatenateAndShuffleSets( lhs_dataset, rhs_dataset):
+    merged_set = lhs_dataset + rhs_dataset 
+    
 
 
 class DataCollection:
@@ -52,8 +75,7 @@ class DataCollection:
         labels_total = np.ones( num_samples ) if is_signal else np.zeros( num_samples ) 
 
         #randomly shuffle the datasets to prevent any structure
-        indices = list( range( num_samples ) ) #in python 3 list does not return a list 
-        np.random.shuffle( indices )
+        indices = randomlyShuffledIndices( samples_total )
         samples_total = samples_total[indices]
         weights_total = weights_total[indices]
 
@@ -84,9 +106,11 @@ class Data:
         self.signal_collection = signal_collection
         self.background_collection = background_collection
 
+
     def __init__(self, tree_signal, tree_background, branch_names, weight_name, validation_fraction, test_fraction):
         self.signal_collection = DataCollection( tree_signal, branch_names, weight_name, validation_fraction, test_fraction, True)
         self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False)
+
 
     def __init__(self, file_name, tree_signal_name, tree_background_name, branch_names, weight_name, validation_fraction, test_fraction):
             
@@ -102,6 +126,33 @@ class Data:
 
         #use trees to initialize data
         self.__init__(tree_signal, tree_background, branch_names, weight_name, validation_fraction, test_fraction)
+
+
+    def concatenateAndShuffleSets( lhs_samples, lhs_weights, lhs_labels, rhs_samples, rhs_weights, rhs_labels):
+        merged_samples = lhs_samples
+        merged_samples.concatenate( rhs_samples, axis = 0)
+        indices = randomlyShuffledIndices( 
+
+        merged_array = lhs_array.concatenate( rhs_array, axis = 0)
+        indices = randomlyShuffledIndices( merged_array )
+        merged_array = merged_array[indices]
+        return merged_array
         
+
+    def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
+        
+        #make shuffled training and validation sets 
+        training_data = signal_collection.getTrainingSet()
+        training_data.concatenate( background_collection().getTrainingSet(), axis = 0) 
+        indices = randomlyShuffledIndices( training_data )
+
+        training_labels = 
+
+    #    trainDenseClassificationModel( self.signal_collection.getTrainingSet().get
+
+    #    trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1)
+    #    
+
+
         
 
