@@ -93,10 +93,10 @@ def binWidth(num_bins, min_bin, max_bin):
 
 def addHist( data, weights, num_bins, min_bin, max_bin ):
     bin_width = binWidth( num_bins, min_bin, max_bin )
-    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), normed=True, histtype='step', lw=2, color='blue')
+    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), weights = weights, normed=True, histtype='step', lw=2, color='blue')
     bin_errors = errors( data, weights, num_bins, min_bin, max_bin)
     bin_centers = 0.5*(bins[1:] + bins[:-1]) 
-    plt.errorbar(mid, n, yerr=bin_errors, fmt='none', color='blue')
+    plt.errorbar(bin_centers, n, yerr=bin_errors, fmt='none', color='blue')
 
 def errors( data, weights, num_bins, min_bin, max_bin ):
     bin_errors = np.zeros( num_bins )
