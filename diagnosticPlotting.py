@@ -3,6 +3,7 @@ import numpy as np
 import root_numpy
 from ROOT import TH1D, TCanvas, TLegend
 
+
 def plotComparison( training_history, model_name, metric ):
 
     #extract history of the metric 
@@ -25,8 +26,10 @@ def plotComparison( training_history, model_name, metric ):
 def plotAccuracyComparison( training_history, model_name ):
     return plotComparison(training_history, model_name, 'acc')
 
+
 def plotLossComparison( training_history, model_name ):
     return plotComparison(training_history, model_name, 'loss')
+
 
 def computeROC(outputs_signal, weights_signal, outputs_background, weights_background, num_points = 1000):
     
@@ -52,10 +55,12 @@ def computeROC(outputs_signal, weights_signal, outputs_background, weights_backg
         bkg_eff[i] = numerator_background/denominator_background
 
     return (sig_eff, bkg_eff)
+
     
 def backgroundRejection( bkg_eff ):
     bkg_rejection =  np.ones( len(bkg_eff) ) - bkg_eff
     return bkg_rejection
+
 
 def plotROC(sig_eff, bkg_eff, model_name):
     
@@ -79,38 +84,43 @@ def areaUndeCurve(sig_eff, bkg_eff):
     return abs( integral )
     
 
-def testOutputPlot( outputs, weights ):
-    min_output = np.min( outputs)
-    max_output = np.max( outputs)
-    addHist( outputs, weights, 30, min_output, max_output)
+def testOutputPlot( outputs_sig, weights_sig, outputs_bkg, weights_bkg):
+    min_output = min( np.min( outputs_sig ), np.min( outputs_bkg ) )
+    max_output = max( np.max( outputs_sig ), np.max( outputs_bkg ) )
+    addHist( outputs_sig, weights_sig, 30, min_output, max_output, color = 'blue')
+    addHist( outputs_bkg, weights_bkg, 30, min_output, max_output, color = 'red')
     bottom, top = plt.ylim()
     plt.ylim( 0,  top)
     plt.savefig('test_hist.pdf')
     plt.clf()
 
+
 def binWidth(num_bins, min_bin, max_bin):
     return float( max_bin - min_bin) / num_bins
 
-def addHist( data, weights, num_bins, min_bin, max_bin ):
+
+def addHist( data, weights, num_bins, min_bin, max_bin, color = 'blue'):
     bin_width = binWidth( num_bins, min_bin, max_bin )
-    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), weights = weights, normed=True, histtype='step', lw=2, color='blue')
+    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), weights = weights/np.sum(weights), histtype='step', lw=2, color=color)
     bin_errors = errors( data, weights, num_bins, min_bin, max_bin)
     bin_centers = 0.5*(bins[1:] + bins[:-1]) 
-    plt.errorbar(bin_centers, n, yerr=bin_errors, fmt='none', color='blue')
+    plt.errorbar(bin_centers, n, yerr=bin_errors, fmt='none', ecolor=color)
+
 
 def errors( data, weights, num_bins, min_bin, max_bin ):
     bin_errors = np.zeros( num_bins )
     bin_width = binWidth( num_bins, min_bin, max_bin )
-    scale = np.sum(weights)
     for entry in data:
         bin_number = int( (entry - min_bin) // bin_width )
         if bin_number == num_bins :
             bin_number = num_bins - 1
         weight_entry =  weights[bin_number]
-        bin_errors[bin_number] += weight_entry * weight_entry 
+        bin_errors[bin_number] += weight_entry*weight_entry
     bin_errors = (bin_errors ** 0.5)
+    scale = np.sum(weights)
     bin_errors /= scale
     return bin_errors 
+
 
 #def plotOutputShapeComparison( outputs_signal_training, weights_signal_training, outputs_background_training, outputs_signal_testing, outputs_background_testing, model_name, num_bins = 30):
 #    
