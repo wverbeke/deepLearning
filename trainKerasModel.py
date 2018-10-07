@@ -106,7 +106,7 @@ if __name__ == '__main__':
     training_weights = np.concatenate( (training_weights_signal, training_weights_background ), axis = 0)
     training_labels = np.concatenate( (training_labels_signal, training_labels_background) , axis = 0)
 
-    indices = range( len( training_data ) )
+    indices = list( range( len( training_data ) ) )
     np.random.shuffle( indices )
 
     training_data = training_data[indices] 
@@ -123,13 +123,21 @@ if __name__ == '__main__':
     training_weights = training_weights[split_index : ]
     training_labels = training_labels[split_index : ]
 
-    model = trainDenseClassificationModel( training_data, training_labels, validation_data, validation_labels, training_weights, validation_weights, num_threads = 8, learning_rate = 0.001, dropoutFirst = False, num_epochs = 1)
+    model = trainDenseClassificationModel( training_data, training_labels, validation_data, validation_labels, training_weights, validation_weights, num_threads = 4, learning_rate = 0.001, dropoutFirst = False, num_epochs = 1)
     
     signal_output = model.predict(  training_data_signal )
     background_output = model.predict( training_data_background )
+
+    testOutputPlot( signal_output, training_weights_signal )
     
-    eff_signal, eff_bkg = computeROC( signal_output, training_weights_signal, background_output, training_weights_background )
+    #eff_signal, eff_bkg = computeROC( signal_output, training_weights_signal, background_output, training_weights_background )
+    #
+    #plotROC( eff_signal, eff_bkg )
+    #
+    #print( 'ROC integral = {}'.format(areaUndeCurve( eff_signal, eff_bkg )	) )
+
     
-    plotROC( eff_signal, eff_bkg )
+
     
-    print( 'ROC integral = {}'.format(areaUndeCurve( eff_signal, eff_bkg )	) )
+
+
