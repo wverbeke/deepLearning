@@ -10,10 +10,10 @@ def treeToArray(tree, branchList):
     #convert to ndarray
     output_shape = ()
     num_rows = len(arrayTuples)
-    #no column dimension if just one branch is specified 
-    #num_cols = None if isinstance(branchList, basestring) else len(arrayTuples[0]) 
 
-    argument_is_list = not isinstance(branchList, basestring ) 
+    #check if one branch name or list of branches is given
+    argument_is_list = not ( type(branchList) is str ) 
+
     if argument_is_list :
         num_columns = len(arrayTuples[0])
         output_shape = (num_rows, num_columns)
@@ -41,18 +41,5 @@ def listOfBranches(tree):
     return names 
 
 if __name__ == '__main__' :
+    pass
     
-    testFile = TFile("ttW_trainingData_new.root")
-    testFile.ls()
-    tree = testFile.Get('signalTree')
-    names = [ branch.GetName() for branch in tree.GetListOfBranches() ]
-    print( names )
-    branchList = ['_jetPt1', '_jetEta1', '_jetPhi1', '_jetE1']
-    array = treeToArray(tree, branchList)
-    print( 'array.dtype = {}'.format( array.dtype ) )
-    print('shape of array : {}'.format( array.shape ) )
-    for entry in range(10):
-        print('array[{0}] = {1}'.format( entry,  array[entry] ) )
-
-
-
