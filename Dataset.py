@@ -136,7 +136,7 @@ class Data:
         self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False, only_positive_weights)
 
 
-    def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
+    def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
         
         #make shuffled training and validation sets 
         training_data = concatenateAndShuffleSets( self.signal_collection.getTrainingSet(), self.background_collection.getTrainingSet() )
@@ -150,9 +150,9 @@ class Data:
             units_per_layer = units_per_layer, 
             activation = activation, 
             learning_rate = learning_rate, 
-            dropoutFirst = dropoutFirst, 
-            dropoutAll = dropoutAll, 
-            dropoutRate = dropoutRate, 
+            dropout_first = dropout_first, 
+            dropout_all = dropout_all, 
+            dropout_rate = dropout_rate, 
             num_epochs = num_epochs, 
             num_threads = num_threads
         )

@@ -17,15 +17,15 @@ def tensorFlowSetNumThreads( num_threads ):
 
 
 #make name for model depending on its hyperparameters 
-def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, dropoutFirst, dropoutAll):
+def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all):
     model_name = 'model_{0}hiddenLayers_{1}unitsPerLayer_{2}_learningRate{3}'.format(num_hidden_layers, units_per_layer, activation, learning_rate)  
     model_name = model_name.replace('.', 'p')
-    model_name += ( '_dropoutFirst' if dropoutFirst else '' )
-    model_name += ( '_dropoutAll' if dropoutAll else '' )
+    model_name += ( '_dropout_first' if dropout_first else '' )
+    model_name += ( '_dropout_all' if dropout_all else '' )
     return model_name
 
 
-def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
+def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
 
     model = models.Sequential()
 
@@ -38,8 +38,8 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     #add hidden densely connected layers 
     for x in range(num_hidden_layers) :
         model.add( layers.Dense( units_per_layer, activation = activation ) )
-        if (dropoutFirst and x == 0) or dropoutAll:
-            model.add( layers.Dropout( dropoutRate ) )
+        if (dropout_first and x == 0) or dropout_all:
+            model.add( layers.Dropout( dropout_rate ) )
     
     #output layer
     model.add( layers.Dense(1, activation = 'sigmoid') )
@@ -55,7 +55,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     )
 
     #name of file in which model will be saved
-    model_output_name = denseModelName( num_hidden_layers, units_per_layer, activation, learning_rate, dropoutFirst, dropoutAll)
+    model_output_name = denseModelName( num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all)
 
     #cut off training at convergence and save model with best validation
     callbacks_list = [
