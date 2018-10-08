@@ -2,10 +2,10 @@ import root_numpy
 from ROOT import TFile 
 import numpy as np
 
-def treeToArray(tree, branchList):
-    
+def treeToArray(tree, branchList, cut = ''):
+
     #convert tree to array of tuples 
-    arrayTuples = root_numpy.tree2array(tree, branchList, '_weight>0')
+    arrayTuples = root_numpy.tree2array(tree, branchList, cut)
 
     #convert to ndarray
     output_shape = ()

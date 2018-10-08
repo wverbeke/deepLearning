@@ -72,16 +72,17 @@ class DataCollection:
         self.data_testing = data_testing 
 
 
-    def __init__(self, tree, branch_names, weight_name, validation_fraction, test_fraction, is_signal):
+    def __init__(self, tree, branch_names, weight_name, validation_fraction, test_fraction, is_signal, only_positive_weights):
 
         #test if sensible input is given
         if (validation_fraction + test_fraction ) >= 1:
             print('Error in DataCollection::__init__ : validation and test fractions sum to a value greater or equal to 1!')
             return
 
-        #read total dataset from tree
-        samples_total = treeToArray( tree, branch_names )
-        weights_total = treeToArray( tree, weight_name )
+        #read total dataset from tree, and only retain positive weight events if asked 
+        reading_cut = '{}>0'.format(weight_name) if only_positive_weights else ''
+        samples_total = treeToArray( tree, branch_names, reading_cut)
+        weights_total = treeToArray( tree, weight_name, reading_cut )
         num_samples = len(samples_total)
         labels_total = np.ones( num_samples ) if is_signal else np.zeros( num_samples ) 
 
@@ -118,7 +119,7 @@ class Data:
         self.background_collection = background_collection
 
 
-    def __init__(self, file_name, tree_signal_name, tree_background_name, branch_names, weight_name, validation_fraction, test_fraction):
+    def __init__(self, file_name, tree_signal_name, tree_background_name, branch_names, weight_name, validation_fraction, test_fraction, only_positive_weights = True):
             
         #make sure input file exists 
         if not os.path.isfile( file_name ):
@@ -131,8 +132,8 @@ class Data:
         tree_background = root_file.Get(tree_background_name)
 
         #use trees to initialize data
-        self.signal_collection = DataCollection( tree_signal, branch_names, weight_name, validation_fraction, test_fraction, True)
-        self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False)
+        self.signal_collection = DataCollection( tree_signal, branch_names, weight_name, validation_fraction, test_fraction, True, only_positive_weights)
+        self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False, only_positive_weights)
 
 
     def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
