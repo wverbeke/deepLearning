@@ -155,17 +155,17 @@ class Data:
             num_epochs = num_epochs, 
             num_threads = num_threads
         )
-
+        
         ##load trained classifier 
         model = models.load_model(model_name + '.h5')
-
+        
         #make predictions 
         signal_training_outputs = model.predict( self.signal_collection.getTrainingSet().getSamples() )
         signal_validation_outputs = model.predict( self.signal_collection.getValidationSet().getSamples() )
         
         background_training_outputs = model.predict( self.background_collection.getTrainingSet().getSamples() )
         background_validation_outputs = model.predict( self.background_collection.getValidationSet().getSamples() )
-
+        
         #plot ROC curve and compute ROC integral for validation set 
         eff_signal, eff_background = computeROC(
             signal_validation_outputs, 
@@ -181,12 +181,12 @@ class Data:
         print('#####################################################')
         
         #compare output shapes 
-       	plotOutputShapeComparison( signal_training_outputs, self.signal_collection.getTrainingSet().getWeights(),
-			background_training_outputs, self.background_collection.getTrainingSet().getWeights(),	
-       		signal_validation_outputs, self.signal_collection.getValidationSet().getWeights(),
-			background_validation_outputs, self.background_collection.getValidationSet().getWeights(),
-			model_name
-		)
+        plotOutputShapeComparison( signal_training_outputs, self.signal_collection.getTrainingSet().getWeights(),
+        	background_training_outputs, self.background_collection.getTrainingSet().getWeights(),	
+        	signal_validation_outputs, self.signal_collection.getValidationSet().getWeights(),
+        	background_validation_outputs, self.background_collection.getValidationSet().getWeights(),
+        	model_name
+        )
         
          
         
