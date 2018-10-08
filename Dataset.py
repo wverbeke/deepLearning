@@ -46,9 +46,9 @@ class Dataset:
         return self.labels
 
     def __add__ (self, rhs):
-        samples = np.concatenate( self.samples, rhs.samples, axis = 0)
-        weights = np.concatenate( self.weights, rhs.weights, axis = 0)
-        labels = np.concatenate( self.labels, rhs.labels, axis = 0)
+        samples = np.concatenate( (self.samples, rhs.samples), axis = 0)
+        weights = np.concatenate( (self.weights, rhs.weights), axis = 0)
+        labels = np.concatenate( (self.labels, rhs.labels), axis = 0)
         return Dataset(samples, weights, labels)
 
 
@@ -90,20 +90,20 @@ class DataCollection:
         max_index_training = int( num_samples*( 1 - validation_fraction - test_fraction ) )
         max_index_validation = int( num_samples*( 1 - test_fraction ) )
 
-        self.data_training = Dataset( samples_total[:max_index_training], weights_total[:max_index_training], labels[:max_index_training]) 
-        self.data_validation = Dataset( samples_total[max_index_training:max_index_validation], weights_total[max_index_training:max_index_validation], labels[max_index_training:max_index_validation])
-        self.data_testing = Dataset( samples_total[max_index_training:], weights_total[max_index_training:], labels[max_index_training:])
+        self.data_training = Dataset( samples_total[:max_index_training], weights_total[:max_index_training], labels_total[:max_index_training]) 
+        self.data_validation = Dataset( samples_total[max_index_training:max_index_validation], weights_total[max_index_training:max_index_validation], labels_total[max_index_training:max_index_validation])
+        self.data_testing = Dataset( samples_total[max_index_training:], weights_total[max_index_training:], labels_total[max_index_training:])
 
 
-    def getTrainingSet():
+    def getTrainingSet(self):
         return self.data_training
 
     
-    def getValidationSet():
+    def getValidationSet(self):
         return self.data_validation
 
     
-    def getTestSet():
+    def getTestSet(self):
         return self.data_test 
 
 
@@ -114,15 +114,10 @@ class Data:
         self.background_collection = background_collection
 
 
-    def __init__(self, tree_signal, tree_background, branch_names, weight_name, validation_fraction, test_fraction):
-        self.signal_collection = DataCollection( tree_signal, branch_names, weight_name, validation_fraction, test_fraction, True)
-        self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False)
-
-
     def __init__(self, file_name, tree_signal_name, tree_background_name, branch_names, weight_name, validation_fraction, test_fraction):
             
         #make sure input file exists 
-        if not os.path.isfile( fileName ):
+        if not os.path.isfile( file_name ):
             print('Error in Data::__init__ input file does not exist. Give a valid ROOT file!')
             return
 
@@ -132,20 +127,29 @@ class Data:
         tree_background = root_file.Get(tree_background_name)
 
         #use trees to initialize data
-        self.__init__(tree_signal, tree_background, branch_names, weight_name, validation_fraction, test_fraction)
+        self.signal_collection = DataCollection( tree_signal, branch_names, weight_name, validation_fraction, test_fraction, True)
+        self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False)
 
 
     def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
         
         #make shuffled training and validation sets 
-        training_data = concatenateAndShuffleSets( signal_collection.getTrainingSet(), background_collection.getTrainingSet() )
-        validation_data = concatenateAndShuffleSets( signal_collection.getTrainingSet(), background_collection.getTrainingSet() )
+        training_data = concatenateAndShuffleSets( self.signal_collection.getTrainingSet(), self.background_collection.getTrainingSet() )
+        validation_data = concatenateAndShuffleSets( self.signal_collection.getTrainingSet(), self.background_collection.getTrainingSet() )
         
         #train classifier 
         trainDenseClassificationModel(
             training_data.getSamples(), training_data.getLabels(), validation_data.getSamples(), validation_data.getLabels(), 
             train_weights = training_data.getWeights(), validation_weights = validation_data.getWeights(), 
-            num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1
+            num_hidden_layers = num_hidden_layers, 
+            units_per_layer = units_per_layer, 
+            activation = activation, 
+            learning_rate = learning_rate, 
+            dropoutFirst = dropoutFirst, 
+            dropoutAll = dropoutAll, 
+            dropoutRate = dropoutRate, 
+            num_epochs = num_epochs, 
+            num_threads = num_threads
         )
 
 
