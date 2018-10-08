@@ -12,8 +12,8 @@ def plotComparison( training_history, model_name, metric ):
 
     #plot metric as a function of the training epoch
     epochs = range(1, len(training_metric) + 1 )
-    plt.plot(epochs, training_metric, 'b', label = 'training ' + metric ) # this name can be improved 
-    plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric ) #this name can be improved 
+    plt.plot(epochs, training_metric, 'b', label = 'training ' + metric, lw=2) # this name can be improved 
+    plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric, lw=2) #this name can be improved 
     plt.legend()
     plt.xlabel('Epoch')
     plt.ylabel(metric) #this name can be improved 
@@ -65,7 +65,7 @@ def backgroundRejection( bkg_eff ):
 def plotROC(sig_eff, bkg_eff, model_name):
     
     #plot background rejection as a function of signal efficiency
-    plt.plot( sig_eff, backgroundRejection(bkg_eff) , 'b')
+    plt.plot( sig_eff, backgroundRejection(bkg_eff) , 'b', lw=2)
     plt.xlabel('Signal efficiency')
     plt.ylabel('Background rejection')
     plt.savefig('roc_' + model_name + '.pdf') 
@@ -84,6 +84,31 @@ def areaUndeCurve(sig_eff, bkg_eff):
     return abs( integral )
     
 
+def plotOutputShapeComparison( outputs_signal_training, weights_signal_training, 
+    outputs_background_training, weights_background_training, 
+    outputs_signal_testing, weights_signal_testing, 
+    outputs_background_testing, weights_background_testing,
+    model_name
+    ):
+
+    min_output = min( np.min(outputs_signal_training), np.min(outputs_background_training), np.min(outputs_signal_testing), np.min(outputs_background_testing ) )
+    max_output = max( np.max(outputs_signal_training), np.max(outputs_background_training), np.max(outputs_signal_testing), np.max(outputs_background_testing ) )
+    
+    addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
+    addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
+    addHist( outputs_background_training, weights_background_training, 30, min_output, max_output, 'Background (training set)', color='red')
+    addHist( outputs_background_testing, weights_background_testing, 30, min_output, max_output, 'Background (validation set)', color = 'purple')
+
+    plt.xlabel('Model output')
+    plt.ylabel('Normalized number of events')
+    plt.legend()
+
+    bottom, top = plt.ylim()
+    plt.ylim( 0,  top)
+    plt.savefig('shapeComparison_' + model_name + '.pdf')
+    plt.clf()
+    
+
 def testOutputPlot( outputs_sig, weights_sig, outputs_bkg, weights_bkg):
     min_output = min( np.min( outputs_sig ), np.min( outputs_bkg ) )
     max_output = max( np.max( outputs_sig ), np.max( outputs_bkg ) )
@@ -99,9 +124,9 @@ def binWidth(num_bins, min_bin, max_bin):
     return float( max_bin - min_bin) / num_bins
 
 
-def addHist( data, weights, num_bins, min_bin, max_bin, color = 'blue'):
+def addHist( data, weights, num_bins, min_bin, max_bin, label, color = 'blue'):
     bin_width = binWidth( num_bins, min_bin, max_bin )
-    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), weights = weights/np.sum(weights), histtype='step', lw=2, color=color)
+    n, bins, _ = plt.hist(data, bins=num_bins, range=(min_bin, max_bin), weights = weights/np.sum(weights), label = label, histtype='step', lw=2, color=color)
     bin_errors = errors( data, weights, num_bins, min_bin, max_bin)
     bin_centers = 0.5*(bins[1:] + bins[:-1]) 
     plt.errorbar(bin_centers, n, yerr=bin_errors, fmt='none', ecolor=color)
@@ -110,50 +135,13 @@ def addHist( data, weights, num_bins, min_bin, max_bin, color = 'blue'):
 def errors( data, weights, num_bins, min_bin, max_bin ):
     bin_errors = np.zeros( num_bins )
     bin_width = binWidth( num_bins, min_bin, max_bin )
-    for entry in data:
+    for i, entry in enumerate(data):
         bin_number = int( (entry - min_bin) // bin_width )
         if bin_number == num_bins :
             bin_number = num_bins - 1
-        weight_entry =  weights[bin_number]
+        weight_entry =  weights[i]
         bin_errors[bin_number] += weight_entry*weight_entry
     bin_errors = (bin_errors ** 0.5)
     scale = np.sum(weights)
     bin_errors /= scale
     return bin_errors 
-
-
-#def plotOutputShapeComparison( outputs_signal_training, weights_signal_training, outputs_background_training, outputs_signal_testing, outputs_background_testing, model_name, num_bins = 30):
-#    
-#    max_output = max( np.max( outputs_signal_training ), np.max( outputs_background_training ), np.max( outputs_signal_testing ), np.max( outputs_background_testing ) )
-#    min_output = min( np.min( outputs_signal_training ), np.min( outputs_background_training ), np.min( outputs_signal_testing ), np.min( outputs_background_testing ) )
-#
-#    hist_signal_training = TH1D( "Signal ( training sample )", "Signal ( training sample ); Model output", num_bins, min_output, max_output )
-#    root_numpy.array2hist( outputs_signal_training, hist_signal_training )
-#    hist_signal_training.Scale( hist_signal_training.GetSumOfWeights() )
-#    hist_background_training = TH1D( "Background ( training sample )", "Background ( training sample ); Model output", num_bins, min_output, max_output )
-#    root_numpy.array2hist( outputs_background_training, hist_background_training )
-#    hist_background_training.Scale( hist_background_training.GetSumOfWeights() )
-#    hist_signal_testing = TH1D( "Signal ( test sample )", "Signal ( test sample ); Model output", num_bins, min_output, max_output )
-#    root_numpy.array2hist( outputs_signal_testing, hist_signal_testing )
-#    hist_signal_testing.Scale( hist_signal_testing.GetSumOfWeights() )
-#    hist_background_testing = TH1D( "Background ( test sample )", "Background ( test sample ); Model output", num_bins, min_output, max_output )
-#    root_numpy.array2hist( outputs_background_testing, hist_background_testing )
-#    outputs_background_testing.Scale( outputs_background_testing.GetSumOfWeights() )
-#
-#    #make legend 
-#    legend = TLegend( 0.25, 0.73, 0.87, 0.92, NULL, "brNDC"); 
-#    legend.SetNColumns(2);
-#    legend.SetFillStyle(0); 
-#    legend.AddEntry( hist_signal_training, 'Signal ( training sample )' )
-#    legend.AddEntry( hist_background_training, 'Background ( training sample )' )
-#    legend.AddEntry( hist_signal_testing, 'Signal ( test sample )' )
-#    legend.AddEntry( hist_background_testing, 'Background ( test sample )' )
-#    
-#    c = TCanvas("", "", 500, 500)
-#    hist_signal_training.Draw('histe')
-#    hist_background_training.Draw('histesame')
-#    hist_signal_testing.Draw('histesame')
-#    hist_background_testing.Draw('histesame')
-#    legend.Draw('same')
-#    
-#    c.SaveAs( 'outputShape_' + model_name + '.pdf' )
