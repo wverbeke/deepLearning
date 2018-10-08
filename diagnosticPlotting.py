@@ -94,17 +94,17 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     min_output = min( np.min(outputs_signal_training), np.min(outputs_background_training), np.min(outputs_signal_testing), np.min(outputs_background_testing ) )
     max_output = max( np.max(outputs_signal_training), np.max(outputs_background_training), np.max(outputs_signal_testing), np.max(outputs_background_testing ) )
     
-    addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
-    addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
     addHist( outputs_background_training, weights_background_training, 30, min_output, max_output, 'Background (training set)', color='red')
     addHist( outputs_background_testing, weights_background_testing, 30, min_output, max_output, 'Background (validation set)', color = 'purple')
+    addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
+    addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
 
     plt.xlabel('Model output')
     plt.ylabel('Normalized number of events')
-    plt.legend()
+    plt.legend(ncol=2, prop={'size': 13})
 
     bottom, top = plt.ylim()
-    plt.ylim( 0,  top)
+    plt.ylim( 0,  top*1.2)
     plt.savefig('shapeComparison_' + model_name + '.pdf')
     plt.clf()
     
