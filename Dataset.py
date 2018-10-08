@@ -25,21 +25,24 @@ class Dataset:
     def __init__(self, samples, weights, labels):
 
         #make sure each samples has a weight and vice-versa
-        if len(samples) != len(weights):
-            print('Error in Dataset::__init__ : sample and weight arrays must have equal length!')
+        if len(samples) != len(weights) or len(samples) != len(labels):
+            print('Error in Dataset::__init__ : sample, weight and label arrays must have equal length!')
             return 
 
         self.samples = samples 
         self.weights = weights  
         self.labels = labels
-    
-    def getSamples:
+
+    def __len__(self):
+        return len( self.samples )
+
+    def getSamples(self):
         return self.samples
     
-    def getWeights:
+    def getWeights(self):
         return self.weights
 
-    def getLabels:
+    def getLabels(self):
         return self.labels
 
     def __add__ (self, rhs):
@@ -51,7 +54,11 @@ class Dataset:
 
 def concatenateAndShuffleSets( lhs_dataset, rhs_dataset):
     merged_set = lhs_dataset + rhs_dataset 
-    
+    indices = randomlyShuffledIndices( merged_set )
+    merged_set.samples = merged_set.getSamples()[indices]
+    merged_set.weights = merged_set.getWeights()[indices]
+    merged_set.labels = merged_set.getLabels()[indices]
+    return merged_set 
 
 
 class DataCollection:
@@ -128,30 +135,18 @@ class Data:
         self.__init__(tree_signal, tree_background, branch_names, weight_name, validation_fraction, test_fraction)
 
 
-    def concatenateAndShuffleSets( lhs_samples, lhs_weights, lhs_labels, rhs_samples, rhs_weights, rhs_labels):
-        merged_samples = lhs_samples
-        merged_samples.concatenate( rhs_samples, axis = 0)
-        indices = randomlyShuffledIndices( 
-
-        merged_array = lhs_array.concatenate( rhs_array, axis = 0)
-        indices = randomlyShuffledIndices( merged_array )
-        merged_array = merged_array[indices]
-        return merged_array
-        
-
     def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1):
         
         #make shuffled training and validation sets 
-        training_data = signal_collection.getTrainingSet()
-        training_data.concatenate( background_collection().getTrainingSet(), axis = 0) 
-        indices = randomlyShuffledIndices( training_data )
-
-        training_labels = 
-
-    #    trainDenseClassificationModel( self.signal_collection.getTrainingSet().get
-
-    #    trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1)
-    #    
+        training_data = concatenateAndShuffleSets( signal_collection.getTrainingSet(), background_collection.getTrainingSet() )
+        validation_data = concatenateAndShuffleSets( signal_collection.getTrainingSet(), background_collection.getTrainingSet() )
+        
+        #train classifier 
+        trainDenseClassificationModel(
+            training_data.getSamples(), training_data.getLabels(), validation_data.getSamples(), validation_data.getLabels(), 
+            train_weights = training_data.getWeights(), validation_weights = validation_data.getWeights(), 
+            num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, dropoutFirst=True, dropoutAll=False, dropoutRate = 0.5, num_epochs = 20, num_threads = 1
+        )
 
 
         
