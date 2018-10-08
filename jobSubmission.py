@@ -2,6 +2,7 @@
 Functions for submitting jobs to the T2 cluster
 """
 
+import os
 import time
 
 def initializeJobScript( file_name ):
@@ -13,7 +14,7 @@ def initializeJobScript( file_name ):
 
     #inside the job switch back to directory where program was executed 
     current_directory = os.path.dirname( os.path.abspath( __file__ ) )
-    script.write('cd ' + currentDir + '\n')
+    script.write('cd ' + current_directory + '\n')
 
     #return the script
     return script
