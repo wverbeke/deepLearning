@@ -46,7 +46,6 @@ from jobSubmission import *
 from trainKerasModel import denseModelName
 
 
-
 def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
 
     #make sure correct path is given for input root file
@@ -75,15 +74,18 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
     #make name of model that will be trained 
     model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, dropout_first, dropout_all, dropout_rate)
 
-    #make directory and switch to it 
+    #make directory and switch to it in script 
     os.system('mkdir -p output/{}'.format( model_name ) )
-    
-    #switch to this directory in the script 
     script.write( 'cd output/{}\n'.format( model_name ))
 
-
+    #run training code 
     training_command = 'python {0}'.format( os.path.realpath(__file__) )
     training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate)
+
+    #pipe output to text files 
+    log_file = model_name + '_log.txt'
+    error_file = model_name + '_err.txt'
+    training_command += ' > {} 2>{} '.format( log_file, error_file) 
     script.write( training_command + '\n')
     script.close()
 
