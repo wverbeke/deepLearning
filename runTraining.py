@@ -9,12 +9,12 @@ background_tree = 'bkgTree'
 branch_list = [
 	'_lPt1', '_lEta1', '_lPhi1',
 	'_lPt2', '_lEta2', '_lPhi2',
-	'_jetPt1', '_jetEta1', '_jetPhi1',
-	'_jetPt2', '_jetEta2', '_jetPhi2',
-	'_jetPt3', '_jetEta3', '_jetPhi3',
-	'_jetPt4', '_jetEta4', '_jetPhi4',
-	'_jetPt5', '_jetEta5', '_jetPhi5',
-	'_jetPt6', '_jetEta6', '_jetPhi6',
+	'_jetPt1', '_jetEta1', '_jetPhi1', '_jetCSV1',
+	'_jetPt2', '_jetEta2', '_jetPhi2', '_jetCSV2',
+	'_jetPt3', '_jetEta3', '_jetPhi3', '_jetCSV3',
+	'_jetPt4', '_jetEta4', '_jetPhi4', '_jetCSV4',
+	'_jetPt5', '_jetEta5', '_jetPhi5', '_jetCSV5',
+	'_jetPt6', '_jetEta6', '_jetPhi6', '_jetCSV6',
 	'_metPt1', '_metPhi1'
 	]
 
@@ -37,18 +37,19 @@ dropout_all = [False, True]
 dropout_rate = [0.5, 0.3]
 
 
-
-
-
 import os
 import sys
 import argparse
 
 from Dataset import Data
-from jobSubmission import *
+from jobSubmission import * 
+from trainKerasModel import denseModelName
+
 
 
 def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
+
+    #train model
     classification_data = Data(root_file_name, signal_tree, background_tree, branchList, weight_branch, validation_fraction, test_fraction, only_positive_weights )
     classification_data.trainDenseClassificationModel(
     	num_hidden_layers = num_hidden_layers, 
@@ -67,15 +68,26 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
 
     #make script that will be submitted 
     script = initializeJobScript('train_keras_model.sh')
+
+    #make name of model that will be trained 
+    model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, dropout_first, dropout_all, dropout_rate)
+
+    #make directory and switch to it 
+    os.system('mkdir -p output/{}'.format( model_name ) )
+    
+    #switch to this directory in the script 
+    script.write( 'cd output/{}'.format( model_name ) )
+
+
     training_command = 'python {0}'.format( os.path.realpath(__file__) )
     training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate)
-    script.write( training_command )
+    script.write( training_command + '\n')
     script.close()
 
     #submit script to cluster 
-    submitJobScript( 'train_keras_model.sh' )    
-    #with open( 'train_keras_model.sh' ) as f :
-    #    print( f.read() )
+    #submitJobScript( 'train_keras_model.sh' )    
+    with open( 'train_keras_model.sh' ) as f :
+        print( f.read() )
        
  
 if __name__ == '__main__' :
