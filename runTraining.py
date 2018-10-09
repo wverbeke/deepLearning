@@ -7,8 +7,8 @@ background_tree = 'bkgTree'
 
 #list of variables to be used in training (corresponding to branches in the tree)
 branch_list = [
-	'_lPt1', '_lEta1', '_lPhi1',
-	'_lPt2', '_lEta2', '_lPhi2',
+	'_lepPt1', '_lepEta1', '_lepPhi1',
+	'_lepPt2', '_lepEta2', '_lepPhi2',
 	'_jetPt1', '_jetEta1', '_jetPhi1', '_jetCSV1',
 	'_jetPt2', '_jetEta2', '_jetPhi2', '_jetCSV2',
 	'_jetPt3', '_jetEta3', '_jetPhi3', '_jetCSV3',
@@ -49,8 +49,11 @@ from trainKerasModel import denseModelName
 
 def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
 
+    #make sure correct path is given for input root file
+    root_file_name_full = os.path.join( os.path.dirname(os.path.abspath( __file__) ) , root_file_name )
+
     #train model
-    classification_data = Data(root_file_name, signal_tree, background_tree, branchList, weight_branch, validation_fraction, test_fraction, only_positive_weights )
+    classification_data = Data(root_file_name_full, signal_tree, background_tree, branch_list, weight_branch, validation_fraction, test_fraction, only_positive_weights )
     classification_data.trainDenseClassificationModel(
     	num_hidden_layers = num_hidden_layers, 
     	units_per_layer = units_per_layer, 
@@ -76,7 +79,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
     os.system('mkdir -p output/{}'.format( model_name ) )
     
     #switch to this directory in the script 
-    script.write( 'cd output/{}'.format( model_name ) )
+    script.write( 'cd output/{}\n'.format( model_name ))
 
 
     training_command = 'python {0}'.format( os.path.realpath(__file__) )
@@ -85,9 +88,9 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
     script.close()
 
     #submit script to cluster 
-    #submitJobScript( 'train_keras_model.sh' )    
-    with open( 'train_keras_model.sh' ) as f :
-        print( f.read() )
+    submitJobScript( 'train_keras_model.sh' )    
+    #with open( 'train_keras_model.sh' ) as f :
+    #    print( f.read() )
        
  
 if __name__ == '__main__' :
@@ -98,11 +101,12 @@ if __name__ == '__main__' :
         parser.add_argument('units_per_layer', type=int)
         parser.add_argument('learning_rate', type=float)
         parser.add_argument('dropout_first', type=bool)
+        parser.add_argument('dropout_last', type=bool)
         parser.add_argument('dropout_rate', type=float)
-        parset.add_argument('only_positive_weights', type=bool, default=True)
+        #parser.add_argument('only_positive_weights', type=bool, default=True)
         args = parser.parse_args()
         
-        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.dropoutFirst, args.dropoutRate)        
+        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.dropout_first, args.dropout_last, args.dropout_rate)        
 
     else:
         num_networks = len( num_hidden_layers )*len( units_per_layer )*len( learning_rates )*len( dropout_first )*len( dropout_all )*len( dropout_rate )

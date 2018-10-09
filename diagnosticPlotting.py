@@ -1,7 +1,10 @@
+#prevent matplotlib from using xwindows which is not available when submitting jobs to worker nodes 
+import matplotlib
+matplotlib.use('Agg')
+
+#import necessary libraries 
 import matplotlib.pyplot as plt
 import numpy as np
-import root_numpy
-from ROOT import TH1D, TCanvas, TLegend
 
 
 def plotComparison( training_history, model_name, metric ):
