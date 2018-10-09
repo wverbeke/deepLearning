@@ -13,10 +13,9 @@ def setupCMSSW():
 
 
 def getCMSSWDirectory():
-    cmssw_dir = os.environ['CMSSW_BASE']
-    if cmssw_dir is '':
+    if cmssw_dir not in os.environ :
         setupCMSSW()
-        cmssw_dir = os.environ['CMSSW_BASE']
+    cmssw_dir = os.environ['CMSSW_BASE']
     return cmssw_dir 
 
 
