@@ -19,8 +19,8 @@ def tensorFlowSetNumThreads( num_threads ):
 #make name for model depending on its hyperparameters 
 def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all, dropout_rate):
     model_name = 'model_{0}hiddenLayers_{1}unitsPerLayer_{2}_learningRate{3}'.format(num_hidden_layers, units_per_layer, activation, learning_rate)  
-    model_name += ( '_dropout_first{}'.format(dropout_rate) if dropout_first else '' )
-    model_name += ( '_dropout_all{}'.format(dropout_rate) if dropout_all else '' )
+    model_name += ( '_dropoutFirst{}'.format(dropout_rate) if dropout_first else '' )
+    model_name += ( '_dropoutAll{}'.format(dropout_rate) if dropout_all else '' )
     model_name = model_name.replace('.', 'p')
     return model_name
 
