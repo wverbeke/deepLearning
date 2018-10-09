@@ -9,7 +9,8 @@ if len( sys.argv ) < 2:
     sys.exit()
 
 #read input file 
-configuration_file = __import__(sys.argv[1].replace('.py', '') )
+configuration_file_name = sys.argv[1]
+configuration_file = __import__( configuration_file_name.replace('.py', '') )
 
 from Dataset import Data
 from jobSubmission import * 
@@ -57,7 +58,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
     script.write( 'cd output/{}\n'.format( model_name ))
 
     #run training code 
-    training_command = 'python {0}'.format( os.path.realpath(__file__) )
+    training_command = 'python {0} {1}'.format( os.path.realpath(__file__), os.path.realpath( configuration_file_name) )
     training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate)
 
     #pipe output to text files 
@@ -77,6 +78,7 @@ if __name__ == '__main__' :
 
     if len( sys.argv ) > 2:    
         parser = argparse.ArgumentParser()
+        parser.add_argument('configuration_file_name', type=str)
         parser.add_argument('num_hidden_layers', type=int)
         parser.add_argument('units_per_layer', type=int)
         parser.add_argument('learning_rate', type=float)
