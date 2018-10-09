@@ -58,7 +58,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
     script.write( 'cd output/{}\n'.format( model_name ))
 
     #run training code 
-    training_command = 'python {0} {1}'.format( os.path.realpath(__file__), os.path.realpath( configuration_file_name) )
+    training_command = 'python {0} {1}'.format( os.path.realpath(__file__), configuration_file_name )
     training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate)
 
     #pipe output to text files 
