@@ -17,7 +17,7 @@ def plotComparison( training_history, model_name, metric ):
     epochs = range(1, len(training_metric) + 1 )
     plt.plot(epochs, training_metric, 'b', label = 'training ' + metric, lw=2) # this name can be improved 
     plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric, lw=2) #this name can be improved 
-    plt.legend()
+    plt.legend(loc='best')
     plt.xlabel('Epoch')
     plt.ylabel(metric) #this name can be improved 
     plt.savefig( metric + '_' + model_name + '.pdf')
