@@ -5,10 +5,26 @@ Functions for submitting jobs to the T2 cluster
 import os
 import time
 
+
+def setupCMSSW():
+    recent_cmssw_release = 'CMSSW_9_4_10'
+    os.system('cmsrel {}'.format( recent_cmssw_release) )
+    os.system('cd {}/src/; cmsenv'.format( recent_cmssw_release) )
+
+
+def getCMSSWDirectory():
+    cmssw_dir = os.environ['CMSSW_BASE']
+    if cmssw_dir is '':
+        setupCMSSW()
+        cmssw_dir = os.environ['CMSSW_BASE']
+    return cmssw_dir 
+
+
 def initializeJobScript( file_name ):
     script = open( file_name, 'w' )
-    script.write('export SCRAM_ARCH=slc6_amd64_gcc630\n')
-    script.write('cd /user/${USER}/${CMSSW_BASE}/src\n')
+    recent_scram_arch = 'slc6_amd64_gcc630'
+    script.write('export SCRAM_ARCH={}\n'.format(recent_scram_arch) )
+    script.write('cd {}/src\n'.format( getCMSSWDirectory() ) )
     script.write('source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
     script.write('eval `scram runtime -sh`\n')
 
@@ -44,6 +60,7 @@ def submitJobScript( script_name, wall_time = '24:00:00', num_threads = 1):
             if error in output:
                 error_found = True
         if not error_found :
-            print( output )
+            first_line = output.split('\n')[0]
+            print( first_line )
             break
         time.sleep(1)
