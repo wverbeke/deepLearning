@@ -17,11 +17,11 @@ def tensorFlowSetNumThreads( num_threads ):
 
 
 #make name for model depending on its hyperparameters 
-def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all):
+def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all, dropout_rate):
     model_name = 'model_{0}hiddenLayers_{1}unitsPerLayer_{2}_learningRate{3}'.format(num_hidden_layers, units_per_layer, activation, learning_rate)  
+    model_name += ( '_dropout_first{}'.format(dropout_rate) if dropout_first else '' )
+    model_name += ( '_dropout_all{}'.format(dropout_rate) if dropout_all else '' )
     model_name = model_name.replace('.', 'p')
-    model_name += ( '_dropout_first' if dropout_first else '' )
-    model_name += ( '_dropout_all' if dropout_all else '' )
     return model_name
 
 
@@ -55,7 +55,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     )
 
     #name of file in which model will be saved
-    model_output_name = denseModelName( num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all)
+    model_output_name = denseModelName( num_hidden_layers, units_per_layer, activation, learning_rate, dropout_first, dropout_all, dropout_rate)
 
     #cut off training at convergence and save model with best validation
     callbacks_list = [
