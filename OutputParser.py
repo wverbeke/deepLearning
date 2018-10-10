@@ -57,6 +57,8 @@ class OutputParser:
     def copyBestModelsOutput(self):
         os.system('mkdir -p bestModels')
         for i, model in enumerate( self.ranked_models ):
+            if i >= 10:
+                break
             os.system('cp -r output/{} bestModels/model_rank_{}'.format( model[0], i + 1 ) )
 
     def bestModels(self):
