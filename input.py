@@ -32,6 +32,7 @@ test_fraction = 0.2
 num_hidden_layers = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 units_per_layer = [64, 128, 256, 512]
 learning_rates = [0.001, 0.0001, 0.00001]
+learning_rate_decays = [0.0, 0.9, 0.95]
 dropout_first = [False, True]
 dropout_all = [False, True]
 dropout_rate = [0.5, 0.3]

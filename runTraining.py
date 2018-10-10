@@ -17,7 +17,7 @@ from trainKerasModel import denseModelName
 from ConfigurationParser import ConfigurationParser
 import argparse
 
-def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
+def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
     #make sure correct path is given for input root file
     root_file_name_full = os.path.join( os.path.dirname(os.path.abspath( __file__) ) , configuration_file.root_file_name )
@@ -38,6 +38,7 @@ def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dr
     	units_per_layer = units_per_layer, 
     	activation = 'relu', 
     	learning_rate = learning_rate, 
+        learning_rate_decay = learning_rate_decay,
     	dropout_first = dropout_first,
     	dropout_all = dropout_all, 
     	dropout_rate = dropout_rate, 
@@ -46,13 +47,13 @@ def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, dr
     )
  
 
-def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
+def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
     #make script that will be submitted 
     script = initializeJobScript('train_keras_model.sh')
 
     #make name of model that will be trained 
-    model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, dropout_first, dropout_all, dropout_rate)
+    model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #make directory and switch to it in script 
     os.system('mkdir -p output/{}'.format( model_name ) )
@@ -60,7 +61,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, dropout
 
     #run training code 
     training_command = 'python {0} {1}'.format( os.path.realpath(__file__), configuration_file_name )
-    training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate)
+    training_command += ' {0} {1} {2} {3} {4} {5}'.format( num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #pipe output to text files 
     log_file = model_name + '_log.txt'
@@ -83,12 +84,13 @@ if __name__ == '__main__' :
         parser.add_argument('num_hidden_layers', type=int)
         parser.add_argument('units_per_layer', type=int)
         parser.add_argument('learning_rate', type=float)
+        parser.add_argument('learning_rate_decay', type=float)
         parser.add_argument('dropout_first', type=bool)
         parser.add_argument('dropout_last', type=bool)
         parser.add_argument('dropout_rate', type=float)
         args = parser.parse_args()
         
-        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.dropout_first, args.dropout_last, args.dropout_rate)        
+        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.learning_rate_decay, args.dropout_first, args.dropout_last, args.dropout_rate)        
 
     else :
 

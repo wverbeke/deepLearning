@@ -1,10 +1,11 @@
 import itertools
 
 class HyperParameterSet():
-    def __init__(self, num_hidden_layers, units_per_layer, learning_rate, dropout_first, dropout_all, dropout_rate):
+    def __init__(self, num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
         self.num_hidden_layers = num_hidden_layers
         self.units_per_layer = units_per_layer
         self.learning_rate = learning_rate
+        self.learning_rate_decay = learning_rate_decay
         self.dropout_first = dropout_first
         self.dropout_all = dropout_all
         self.dropout_rate = dropout_rate
@@ -18,7 +19,7 @@ class HyperParameterSet():
 
 
     def getParameterSet(self):
-        return ( self.num_hidden_layers, self.units_per_layer, self.learning_rate, self.dropout_first, self.dropout_all, self.dropout_rate )
+        return ( self.num_hidden_layers, self.units_per_layer, self.learning_rate, self.learning_rate_decay, self.dropout_first, self.dropout_all, self.dropout_rate )
 
 
     def __eq__(self, rhs):
@@ -43,6 +44,7 @@ class ConfigurationParser():
         option_list = [configuration_file.num_hidden_layers]
         option_list.append( configuration_file.units_per_layer )
         option_list.append( configuration_file.learning_rates )
+        option_list.append( configuration_file.learning_rate_decays )
         option_list.append( configuration_file.dropout_first )
         option_list.append( configuration_file.dropout_all )
         option_list.append( configuration_file.dropout_rate )
