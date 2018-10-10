@@ -20,6 +20,7 @@ def plotComparison( training_history, model_name, metric ):
     plt.legend(loc='best')
     plt.xlabel('Epoch')
     plt.ylabel(metric) #this name can be improved 
+    plt.grid(True)
     plt.savefig( metric + '_' + model_name + '.pdf')
     
     #clear canvas
@@ -71,6 +72,7 @@ def plotROC(sig_eff, bkg_eff, model_name):
     plt.plot( sig_eff, backgroundRejection(bkg_eff) , 'b', lw=2)
     plt.xlabel('Signal efficiency')
     plt.ylabel('Background rejection')
+    plt.grid(True)
     plt.savefig('roc_' + model_name + '.pdf') 
 
     #clear canvas
