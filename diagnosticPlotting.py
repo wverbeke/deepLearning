@@ -37,8 +37,9 @@ def plotLossComparison( training_history, model_name ):
 
 def computeROC(outputs_signal, weights_signal, outputs_background, weights_background, num_points = 1000):
     
-    sig_eff = np.zeros(num_points)
-    bkg_eff = np.zeros(num_points)
+    #extra points to take into account 0% and 100% efficiency cases 
+    sig_eff = np.zeros(num_points + 2)
+    bkg_eff = np.zeros(num_points + 2)
 
     denominator_signal = np.sum( weights_signal )
     denominator_background = np.sum( weights_background )
@@ -46,15 +47,21 @@ def computeROC(outputs_signal, weights_signal, outputs_background, weights_backg
     max_output = max( np.max( outputs_signal ), np.max(outputs_background ) )
     output_range = max_output - min_output
 
-    for i in range(num_points):
-        cut = min_output + (output_range/num_points)*i
+    ##0 and 100% efficiency points
+    sig_eff[0] = 1.
+    sig_eff[1] = 0.
+    bkg_eff[0] = 1.
+    bkg_eff[1] = 0.
 
+    for i in range(1, num_points + 1):
+        cut = min_output + (output_range/num_points)*i
+        
         pass_signal = ( outputs_signal > cut ).reshape( len( weights_signal ) )
         numerator_signal = np.sum( weights_signal[ pass_signal ] )
-
+        
         pass_background = ( outputs_background > cut ).reshape( len( weights_background ) )
         numerator_background = np.sum( weights_background[ pass_background ] )
-
+        
         sig_eff[i] = numerator_signal/denominator_signal
         bkg_eff[i] = numerator_background/denominator_background
 
