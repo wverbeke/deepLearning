@@ -45,7 +45,7 @@ def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, le
     	num_epochs = 200,
     	num_threads = 1
     )
- 
+
 
 def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
@@ -74,6 +74,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learnin
     submitJobScript( 'train_keras_model.sh' )    
     #with open( 'train_keras_model.sh' ) as f :
     #    print( f.read() )
+    
 
  
 if __name__ == '__main__' :
@@ -85,12 +86,12 @@ if __name__ == '__main__' :
         parser.add_argument('units_per_layer', type=int)
         parser.add_argument('learning_rate', type=float)
         parser.add_argument('learning_rate_decay', type=float)
-        parser.add_argument('dropout_first', type=bool)
-        parser.add_argument('dropout_last', type=bool)
+        parser.add_argument('dropout_first', type=str)
+        parser.add_argument('dropout_all', type=str)
         parser.add_argument('dropout_rate', type=float)
         args = parser.parse_args()
-        
-        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.learning_rate_decay, args.dropout_first, args.dropout_last, args.dropout_rate)        
+
+        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.learning_rate_decay, args.dropout_first == 'True', args.dropout_all == 'True', args.dropout_rate)        
 
     else :
 
