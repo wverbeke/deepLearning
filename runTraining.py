@@ -81,9 +81,9 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learnin
     script.close()
 
     #submit script to cluster 
-    #submitJobScript( 'train_keras_model.sh' )    
-    with open( 'train_keras_model.sh' ) as f :
-        print( f.read() )
+    submitJobScript( 'train_keras_model.sh' )    
+    #with open( 'train_keras_model.sh' ) as f :
+    #    print( f.read() )
     
 
  
