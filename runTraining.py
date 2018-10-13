@@ -15,6 +15,7 @@ from Dataset import Data
 from jobSubmission import * 
 from trainKerasModel import denseModelName
 from ConfigurationParser import ConfigurationParser
+from stringTools import removeLeadingCharacter
 import argparse
 
 def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
@@ -47,6 +48,14 @@ def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, le
     )
 
 
+def outputDirectory(configuration_file_name):
+    configuration_file_name = configuration_file_name.replace('.py', '') 
+    configuration_file_name = configuration_file_name.replace('input', '')
+    configuration_file_name = removeLeadingCharacter( configuration_file_name, '_' )
+    output_directory = 'output_{}'.format( configuration_file_name ) if configuration_file_name else 'output'
+    return output_directory 
+
+
 def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
     #make script that will be submitted 
@@ -56,8 +65,9 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learnin
     model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #make directory and switch to it in script 
-    os.system('mkdir -p output/{}'.format( model_name ) )
-    script.write( 'cd output/{}\n'.format( model_name ))
+    output_directory = outputDirectory( configuration_file_name ) 
+    os.system('mkdir -p {}/{}'.format( output_directory, model_name ) )
+    script.write( 'cd {}/{}\n'.format( output_directory, model_name ) )
 
     #run training code 
     training_command = 'python {0} {1}'.format( os.path.realpath(__file__), configuration_file_name )
@@ -71,9 +81,9 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learnin
     script.close()
 
     #submit script to cluster 
-    submitJobScript( 'train_keras_model.sh' )    
-    #with open( 'train_keras_model.sh' ) as f :
-    #    print( f.read() )
+    #submitJobScript( 'train_keras_model.sh' )    
+    with open( 'train_keras_model.sh' ) as f :
+        print( f.read() )
     
 
  

@@ -1,5 +1,7 @@
 import os
 import operator
+import sys
+from stringTools import removeLeadingCharacter
 
 def listContent( directory, typeCheck):
     content = []
@@ -19,12 +21,13 @@ def listFiles( directory ):
 
 
 class OutputParser:
-    def __init__(self):
+    def __init__(self, output_directory):
 
+        self.output_directory = output_directory
         self.AUC_map = {}
 
         #list all files in output directory
-        sub_directories = listSubDirectories( 'output' )
+        sub_directories = listSubDirectories( self.output_directory )
         
         for directory in sub_directories : 
             files = listFiles( directory )
@@ -53,13 +56,22 @@ class OutputParser:
             print( model[0] )
             print( 'validation set ROC integral (AUC) = {}'.format( model[1] ) )
 
+    
+    def outputName(self):
+        output_name = self.output_directory 
+        output_name = output_name.replace( 'output', '' )
+        output_name = removeLeadingCharacter( output_name, '_' )
+        return output_name
 
+    
     def copyBestModelsOutput(self):
-        os.system('mkdir -p bestModels')
+        best_model_directory = 'bestModels_{}'.format( self.outputName() )
+        os.system('mkdir -p {}'.format( best_model_directory ) )
         for i, model in enumerate( self.ranked_models ):
             if i >= 10:
                 break
-            os.system('cp -r output/{} bestModels/model_rank_{}'.format( model[0], i + 1 ) )
+            os.system('cp -r {0}/{1} {2}/model_rank_{3}'.format( self.output_directory, model[0], best_model_directory, i + 1 ) )
+
 
     def bestModels(self):
         self.rankModels()
@@ -69,6 +81,11 @@ class OutputParser:
 
 
 if __name__ == '__main__' :
-    ranker = OutputParser()
-    ranker.bestModels()
+    
+    if len( sys.argv ) == 2 :
+        ranker = OutputParser()
+        ranker.bestModels()
+    else :
+        print( 'Error: incorrect number of arguments given to script.')
+        print( 'Usage: <python OutputParser.py output_directory>')
      
