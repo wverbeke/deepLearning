@@ -177,7 +177,7 @@ class Data:
             num_points = 1000
         )
         plotROC( eff_signal, eff_background, model_name)
-        auc = areaUndeCurve(eff_signal, eff_background )
+        auc = areaUnderCurve(eff_signal, eff_background )
         print('#####################################################')
         print('validation set ROC integral (AUC) = {:.3f}'.format(auc) )
         print('#####################################################')
@@ -189,7 +189,3 @@ class Data:
         	background_validation_outputs, self.background_collection.getValidationSet().getWeights(),
         	model_name
         )
-        
-         
-        
-
