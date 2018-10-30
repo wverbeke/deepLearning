@@ -35,38 +35,35 @@ def plotLossComparison( training_history, model_name ):
     return plotComparison(training_history, model_name, 'loss')
 
 
-def computeROC(outputs_signal, weights_signal, outputs_background, weights_background, num_points = 1000):
+def computeEfficiency( outputs, weights, min_output, max_output, num_points ):
+
+    #make array of possible cuts by dividing the interval in equally spaced cuts 
+    output_range = max_output - min_output
+    cuts = min_output + np.arange(1, num_points + 1)/num_points*output_range
+    cuts = cuts.reshape( (num_points, 1) )
+
+    #sum weights for outputs that passed the cut using broadcasting
+    efficiency = np.sum( np.where( outputs > cuts, weights, 0 ), axis = 1 )/np.sum(weights)
+    return efficiency
+
+
+def computeROC( outputs_signal, weights_signal, outputs_background, weights_background, num_points = 1000 ):
+
+    min_output = min( np.min( outputs_signal ), np.min( outputs_background ) )
+    max_output = max( np.max( outputs_signal ), np.max( outputs_background ) )
     
     #extra points to take into account 0% and 100% efficiency cases 
-    sig_eff = np.zeros(num_points + 2)
-    bkg_eff = np.zeros(num_points + 2)
+    sig_eff = np.zeros( num_points + 2 )
+    sig_eff[0] = 1
+    bkg_eff = np.zeros( num_points + 2 )
+    bkg_eff[0] = 1
 
-    denominator_signal = np.sum( weights_signal )
-    denominator_background = np.sum( weights_background )
-    min_output = min( np.min( outputs_signal ), np.min(outputs_background ) )
-    max_output = max( np.max( outputs_signal ), np.max(outputs_background ) )
-    output_range = max_output - min_output
+    #fill in intermediate points 
+    sig_eff[1:num_points + 1] = computeEfficiency( outputs_signal, weights_signal, min_output, max_output, num_points )
+    bkg_eff[1:num_points + 1] = computeEfficiency( outputs_background, weights_background, min_output, max_output, num_points )
 
-    ##0 and 100% efficiency points
-    sig_eff[0] = 1.
-    sig_eff[1] = 0.
-    bkg_eff[0] = 1.
-    bkg_eff[1] = 0.
-
-    for i in range(1, num_points + 1):
-        cut = min_output + (output_range/num_points)*i
-        
-        pass_signal = ( outputs_signal > cut ).reshape( len( weights_signal ) )
-        numerator_signal = np.sum( weights_signal[ pass_signal ] )
-        
-        pass_background = ( outputs_background > cut ).reshape( len( weights_background ) )
-        numerator_background = np.sum( weights_background[ pass_background ] )
-        
-        sig_eff[i] = numerator_signal/denominator_signal
-        bkg_eff[i] = numerator_background/denominator_background
-
-    return (sig_eff, bkg_eff)
-
+    return sig_eff, bkg_eff
+    
     
 def backgroundRejection( bkg_eff ):
     bkg_rejection =  np.ones( len(bkg_eff) ) - bkg_eff
@@ -87,7 +84,7 @@ def plotROC(sig_eff, bkg_eff, model_name):
 
 
 #compute area under the ROC curve, a strong metric for evaluating the model performance
-def areaUndeCurve(sig_eff, bkg_eff):
+def areaUnderCurve(sig_eff, bkg_eff):
     
     #use trapezoidal rule to compute integral
     integral = np.trapz( backgroundRejection(bkg_eff), sig_eff)
