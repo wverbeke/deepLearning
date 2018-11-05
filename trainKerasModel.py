@@ -13,17 +13,7 @@ def tensorFlowSetNumThreads( num_threads ):
     K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads = num_threads, inter_op_parallelism_threads = num_threads ) ) )
 
 
-#make name for model depending on its hyperparameters 
-def denseModelName(num_hidden_layers, units_per_layer, activation, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
-    model_name = 'model_{0}hiddenLayers_{1}unitsPerLayer_{2}_learningRate{3}'.format(num_hidden_layers, units_per_layer, activation, learning_rate)  
-    model_name += ( '_learningRateDecay{}'.format(learning_rate_decay) if (learning_rate_decay > 0) else '' ) 
-    model_name += ( '_dropoutFirst{}'.format(dropout_rate) if dropout_first else '' )
-    model_name += ( '_dropoutAll{}'.format(dropout_rate) if dropout_all else '' )
-    model_name = model_name.replace('.', 'p')
-    return model_name
-
-
-def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, learning_rate_decay = 0.0, dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
+def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, output_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
 
     model = models.Sequential()
 
@@ -47,13 +37,10 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
 
     #set model objectives
     model.compile(
-        optimizer = optimizers.RMSprop(lr=learning_rate, decay = learning_rate_decay),
+        optimizer = optimizer,
         loss = 'binary_crossentropy',
         metrics = ['accuracy',]
     )
-
-    #name of file in which model will be saved
-    model_output_name = denseModelName( num_hidden_layers, units_per_layer, activation, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #cut off training at convergence and save model with best validation
     callbacks_list = [
@@ -63,7 +50,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
         ),
         callbacks.ModelCheckpoint(
             monitor = 'val_acc',
-            filepath = model_output_name + '.h5',
+            filepath = output_name + '.h5',
             save_best_only = True
         )
     ]
@@ -83,19 +70,14 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     )
 
     #delete weights in saved model to cirumvent a bug in Keras when loading the model
-    trained_model_file = h5py.File( model_output_name + '.h5' , 'r+')
+    trained_model_file = h5py.File( output_name + '.h5' , 'r+')
     del trained_model_file['optimizer_weights']
     trained_model_file.close()
 
     #plot loss and accuracy as a function of epochs
-    plotAccuracyComparison( training_history, model_output_name )
-    plotLossComparison( training_history, model_output_name )
-
-    #output name of model so that caller can access the correct file and load the best (saved) model
-    return model_output_name
+    plotAccuracyComparison( training_history, output_name )
+    plotLossComparison( training_history, output_name )
 
 
-   
 if __name__ == '__main__':
     pass
-
