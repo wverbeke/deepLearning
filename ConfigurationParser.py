@@ -7,7 +7,10 @@ class HyperParameterSet():
     def __init__(self, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate):
         self.num_hidden_layers = num_hidden_layers
         self.units_per_layer = units_per_layer
-        self.optimizer = Optimizer( optimizer_name, relative_learning_rate, relative_learning_rate_decay ), 
+        #self.optimizer = Optimizer( optimizer_name, relative_learning_rate, relative_learning_rate_decay ), 
+        self.optimizer_name = optimizer_name
+        self.relative_learning_rate = relative_learning_rate
+        self.relative_learning_rate_decay = relative_learning_rate_decay
         self.dropout_first = dropout_first
         self.dropout_all = dropout_all
         self.dropout_rate = dropout_rate
@@ -21,14 +24,16 @@ class HyperParameterSet():
 
         #form name of this parameter combination
         self.name = 'model_{0}hiddenLayers_{1}unitsPerLayer_{2}'.format(num_hidden_layers, units_per_layer, 'relu')
-        self.name += ( '_' + self.optimizer.name() )
+        self.name += ( '_' + self.optimizer_name )
+        self.name += '_relativeLearningRate{}'.format( self.relative_learning_rate )
+        self.name += ( '_relativeLearningRateDecay{}'.format( self.relative_learning_rate_decay ) if (self.relative_learning_rate_decay != 1) else '')
         self.name += ( '_dropoutFirst{}'.format( dropout_rate ) if dropout_first else '' )
         self.name += ( '_dropoutAll{}'.format( dropout_all ) if dropout_all else '' )
         self.name = self.name.replace( '.', 'p' )
 
 
     def getParameterSet(self):
-        return ( self.num_hidden_layers, self.units_per_layer, self.optimizer.optimizer(), self.dropout_first, self.dropout_all, self.dropout_rate )
+        return ( self.num_hidden_layers, self.units_per_layer, self.optimizer_name, self.relative_learning_rate, self.relative_learning_rate_decay, self.dropout_first, self.dropout_all, self.dropout_rate )
 
 	
     def getName(self):
@@ -56,6 +61,7 @@ class ConfigurationParser():
         #list all variations specified in the input file
         option_list = [configuration_file.num_hidden_layers]
         option_list.append( configuration_file.units_per_layer )
+        option_list.append( configuration_file.optimizers )
         option_list.append( configuration_file.learning_rates )
         option_list.append( configuration_file.learning_rate_decays )
         option_list.append( configuration_file.dropout_first )
@@ -79,6 +85,7 @@ class ConfigurationParser():
     def yieldVariation(self):
         index = 0
         while index < self.numberOfConfigurations() :
-            yield self.configuration_list[index].getParameterSet()
+            configuration = self.configuration_list[index]
+            yield (configuration.name, configuration.getParameterSet())
             index += 1
 

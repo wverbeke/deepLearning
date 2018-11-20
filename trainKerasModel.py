@@ -13,7 +13,7 @@ def tensorFlowSetNumThreads( num_threads ):
     K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads = num_threads, inter_op_parallelism_threads = num_threads ) ) )
 
 
-def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, output_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
+def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, model_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
 
     model = models.Sequential()
 
@@ -50,7 +50,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
         ),
         callbacks.ModelCheckpoint(
             monitor = 'val_acc',
-            filepath = output_name + '.h5',
+            filepath = model_name + '.h5',
             save_best_only = True
         )
     ]
@@ -70,13 +70,13 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     )
 
     #delete weights in saved model to cirumvent a bug in Keras when loading the model
-    trained_model_file = h5py.File( output_name + '.h5' , 'r+')
+    trained_model_file = h5py.File( model_name + '.h5' , 'r+')
     del trained_model_file['optimizer_weights']
     trained_model_file.close()
 
     #plot loss and accuracy as a function of epochs
-    plotAccuracyComparison( training_history, output_name )
-    plotLossComparison( training_history, output_name )
+    plotAccuracyComparison( training_history, model_name )
+    plotLossComparison( training_history, model_name )
 
 
 if __name__ == '__main__':

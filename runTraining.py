@@ -13,15 +13,18 @@ configuration_file = __import__( configuration_file_name.replace('.py', '') )
 
 from Dataset import Data
 from jobSubmission import * 
-from trainKerasModel import denseModelName
 from ConfigurationParser import ConfigurationParser
 from stringTools import removeLeadingCharacter
+from Optimizer import Optimizer
 import argparse
 
-def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
+def trainAndEvaluateModel( model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
     #make sure correct path is given for input root file
     root_file_name_full = os.path.join( os.path.dirname(os.path.abspath( __file__) ) , configuration_file.root_file_name )
+
+    #make keras optimizer out of optimizer information
+    keras_optimizer = Optimizer( optimizer_name, relative_learning_rate, relative_learning_rate_decay ).kerasOptimizer() 
 
     #train model
     classification_data = Data(
@@ -34,12 +37,13 @@ def trainAndEvaluateModel( num_hidden_layers, units_per_layer, learning_rate, le
         configuration_file.test_fraction, 
         configuration_file.only_positive_weights
     )
+
     classification_data.trainDenseClassificationModel(
+        model_name = model_name,
     	num_hidden_layers = num_hidden_layers, 
     	units_per_layer = units_per_layer, 
     	activation = 'relu', 
-    	learning_rate = learning_rate, 
-        learning_rate_decay = learning_rate_decay,
+        optimizer = keras_optimizer,
     	dropout_first = dropout_first,
     	dropout_all = dropout_all, 
     	dropout_rate = dropout_rate, 
@@ -56,13 +60,10 @@ def outputDirectory(configuration_file_name):
     return output_directory 
 
 
-def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate):
+def submitTrainingJob(model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate):
 
     #make script that will be submitted 
     script = initializeJobScript('train_keras_model.sh')
-
-    #make name of model that will be trained 
-    model_name = denseModelName(num_hidden_layers, units_per_layer, 'relu', learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #make directory and switch to it in script 
     output_directory = outputDirectory( configuration_file_name ) 
@@ -71,7 +72,7 @@ def submitTrainingJob(num_hidden_layers, units_per_layer, learning_rate, learnin
 
     #run training code 
     training_command = 'python {0} {1}'.format( os.path.realpath(__file__), configuration_file_name )
-    training_command += ' {0} {1} {2} {3} {4} {5} {6}'.format( num_hidden_layers, units_per_layer, learning_rate, learning_rate_decay, dropout_first, dropout_all, dropout_rate)
+    training_command += ' {0} {1} {2} {3} {4} {5} {6} {7} {8}'.format( model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate)
 
     #pipe output to text files 
     log_file = model_name + '_log.txt'
@@ -92,16 +93,28 @@ if __name__ == '__main__' :
     if len( sys.argv ) > 2:    
         parser = argparse.ArgumentParser()
         parser.add_argument('configuration_file_name', type=str)
+        parser.add_argument('model_name', type=str)
         parser.add_argument('num_hidden_layers', type=int)
         parser.add_argument('units_per_layer', type=int)
-        parser.add_argument('learning_rate', type=float)
-        parser.add_argument('learning_rate_decay', type=float)
+        parser.add_argument('optimizer_name', type=str)
+        parser.add_argument('relative_learning_rate', type=float)
+        parser.add_argument('relative_learning_rate_decay', type=float)
         parser.add_argument('dropout_first', type=str)
         parser.add_argument('dropout_all', type=str)
         parser.add_argument('dropout_rate', type=float)
         args = parser.parse_args()
 
-        trainAndEvaluateModel( args.num_hidden_layers, args.units_per_layer, args.learning_rate, args.learning_rate_decay, args.dropout_first == 'True', args.dropout_all == 'True', args.dropout_rate)        
+        trainAndEvaluateModel( 
+            args.model_name, 
+            args.num_hidden_layers, 
+            args.units_per_layer, 
+            args.optimizer_name, 
+            args.relative_learning_rate, 
+            args.relative_learning_rate_decay, 
+            ( args.dropout_first == 'True' ),
+            ( args.dropout_all == 'True' ),
+            args.dropout_rate
+        )
 
     else :
 
@@ -113,7 +126,9 @@ if __name__ == '__main__' :
             sys.exit()
 
         for configuration in configuration_parser.yieldVariation():
-            submitTrainingJob( *configuration )
+            configuration_name = configuration[0]
+            configuration_parameters = configuration[1]
+            submitTrainingJob( configuration_name, *configuration_parameters )
 
         print( '########################################################' )
         print( 'Submitted {} neural networks for training.'.format( num_networks ) )

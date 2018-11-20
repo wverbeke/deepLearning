@@ -17,6 +17,7 @@ from ROOT import TTree
 
 #import keras classes 
 from keras import models
+from keras import optimizers
 
 
 def randomlyShuffledIndices( array ):
@@ -136,21 +137,21 @@ class Data:
         self.background_collection = DataCollection( tree_background, branch_names, weight_name, validation_fraction, test_fraction, False, only_positive_weights)
 
 
-    def trainDenseClassificationModel(self, num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', learning_rate = 0.0001, learning_rate_decay = 0.0, dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
+    def trainDenseClassificationModel(self, model_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
         
         #make shuffled training and validation sets 
         training_data = concatenateAndShuffleSets( self.signal_collection.getTrainingSet(), self.background_collection.getTrainingSet() )
         validation_data = concatenateAndShuffleSets( self.signal_collection.getTrainingSet(), self.background_collection.getTrainingSet() )
-        
+
         #train classifier 
-        model_name = trainDenseClassificationModel(
+        trainDenseClassificationModel(
             training_data.getSamples(), training_data.getLabels(), validation_data.getSamples(), validation_data.getLabels(), 
             train_weights = training_data.getWeights(), validation_weights = validation_data.getWeights(), 
+            model_name = model_name, 
             num_hidden_layers = num_hidden_layers, 
             units_per_layer = units_per_layer, 
             activation = activation, 
-            learning_rate = learning_rate, 
-            learning_rate_decay = learning_rate_decay,
+            optimizer = optimizer,
             dropout_first = dropout_first, 
             dropout_all = dropout_all, 
             dropout_rate = dropout_rate, 
@@ -167,7 +168,7 @@ class Data:
         
         background_training_outputs = model.predict( self.background_collection.getTrainingSet().getSamples() )
         background_validation_outputs = model.predict( self.background_collection.getValidationSet().getSamples() )
-        
+       
         #plot ROC curve and compute ROC integral for validation set 
         eff_signal, eff_background = computeROC(
             signal_validation_outputs, 

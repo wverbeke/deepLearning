@@ -30,10 +30,10 @@ test_fraction = 0.2
 
 #different neural network parameters to test
 num_hidden_layers = [2, 3, 4, 5, 6, 7, 8, 9, 10]
-units_per_layer = [64, 128, 256, 512]
-learning_rates = [0.001, 0.0001, 0.00001]
-learning_rate_decays = [0.0, 0.9, 0.95]
+units_per_layer = [16, 32, 64, 128, 256, 512]
+optimizers = ['RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam']
+learning_rates = [0.1, 1, 0.01]
+learning_rate_decays = [1, 0.99, 0.95]
 dropout_first = [False, True]
 dropout_all = [False, True]
 dropout_rate = [0.5, 0.3]
-
