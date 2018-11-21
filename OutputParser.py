@@ -83,7 +83,8 @@ class OutputParser:
 if __name__ == '__main__' :
     
     if len( sys.argv ) == 2 :
-        ranker = OutputParser()
+        output_directory = sys.argv[1]
+        ranker = OutputParser( output_directory )
         ranker.bestModels()
     else :
         print( 'Error: incorrect number of arguments given to script.')
