@@ -180,7 +180,7 @@ class Data:
         plotROC( eff_signal, eff_background, model_name)
         auc = areaUnderCurve(eff_signal, eff_background )
         print('#####################################################')
-        print('validation set ROC integral (AUC) = {:.3f}'.format(auc) )
+        print('validation set ROC integral (AUC) = {:.5f}'.format(auc) )
         print('#####################################################')
         
         #compare output shapes 
