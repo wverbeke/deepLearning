@@ -66,7 +66,8 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
         epochs = num_epochs,
         batch_size = 128,
         validation_data = (validation_data, validatation_labels, (None if validation_weights.size == 0 else validation_weights) ),
-        callbacks = callbacks_list
+        callbacks = callbacks_list,
+        verbose = 2
     )
 
     #delete weights in saved model to cirumvent a bug in Keras when loading the model
