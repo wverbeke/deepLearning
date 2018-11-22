@@ -36,6 +36,9 @@ def plotLossComparison( training_history, model_name ):
 
 
 def computeEfficiency( outputs, weights, min_output, max_output, num_points ):
+    
+    #reshape outputs to be one dimensional
+    outputs = outputs.reshape( len(outputs) )
 
     #make array of possible cuts by dividing the interval in equally spaced cuts 
     output_range = max_output - min_output
