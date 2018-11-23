@@ -42,7 +42,7 @@ def computeEfficiency( outputs, weights, min_output, max_output, num_points ):
 
     #make array of possible cuts by dividing the interval in equally spaced cuts 
     output_range = max_output - min_output
-    cuts = min_output + np.arange(1, num_points + 1)/num_points*output_range
+    cuts = min_output + np.arange(1, num_points + 1, dtype=float)/num_points*output_range
     cuts = cuts.reshape( (num_points, 1) )
 
     #sum weights for outputs that passed the cut using broadcasting
