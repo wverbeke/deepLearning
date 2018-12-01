@@ -14,6 +14,7 @@ def setupCMSSW():
 
 def getCMSSWDirectory():
     if 'CMSSW_BASE' not in os.environ :
+        return 'A'
         setupCMSSW()
     cmssw_dir = os.environ['CMSSW_BASE']
     return cmssw_dir 
@@ -42,7 +43,7 @@ def submitJobScript( script_name, wall_time = '24:00:00', num_threads = 1):
     while True:
         submission_command = 'qsub {0} -l walltime={1}'.format( script_name, wall_time )
         if num_threads > 1:
-            submussion_command += ' -lnodes=1:ppn={}'.format(num_threads)
+            submission_command += ' -lnodes=1:ppn={}'.format(num_threads)
        
         #run submission command  
         os.system( submission_command + ' > output_temp.txt 2>> output_temp.txt')
