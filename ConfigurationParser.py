@@ -28,7 +28,7 @@ class HyperParameterSet():
         self.name += '_relativeLearningRate{}'.format( self.relative_learning_rate )
         self.name += ( '_relativeLearningRateDecay{}'.format( self.relative_learning_rate_decay ) if (self.relative_learning_rate_decay != 1) else '')
         self.name += ( '_dropoutFirst{}'.format( dropout_rate ) if dropout_first else '' )
-        self.name += ( '_dropoutAll{}'.format( dropout_all ) if dropout_all else '' )
+        self.name += ( '_dropoutAll{}'.format( dropout_rate ) if dropout_all else '' )
         self.name = self.name.replace( '.', 'p' )
 
 
