@@ -77,13 +77,13 @@ if __name__ == '__main__' :
 
     #some code to test the Generation class
     def fitness_func( genome ):
-        return genome._traits[0]._value
+        return genome._trait_dict['number_of_nodes']._value
 
     NumberOfNodes  = IntTraitClassFactory( range( 1024 ) )
     Depth = IntTraitClassFactory( range( 10 ) )
     Optimizer = StringTraitClassFactory( ['RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam'] )
     
-    genomes = ( Genome( [NumberOfNodes(0), Depth(0), Optimizer('Nadam')] ) for i in range( 100 ) )
+    genomes = ( Genome( {'number_of_nodes' : NumberOfNodes(0), 'depth' : Depth(0), 'optimizer' : Optimizer('Nadam')} ) for i in range( 100 ) )
     
     generation = Generation( genomes )
     generation.randomize()
