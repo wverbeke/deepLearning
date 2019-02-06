@@ -1,15 +1,20 @@
 import abc
+import json
+import numbers
+import operator
+from collections import OrderedDict
 
 
 #abstract base class representing the configuration of a machine learning algorithm
 class Configuration( abc.ABC ):
     
-    required_parameters = []
+    _required_parameters = []
     def __init__( self, **input_configuration ):
-        self.parameters = {}
+        
+        #parameter dictionary should be ordered to ensure consistent hashing of Configuration with the same parameters
+        self._parameters = OrderedDict()
         for key, value in input_configuration.items():
-            #setattr( self, key, value )
-            self.parameters[key] = value
+            self._parameters[key] = value
 
         #check whether all necessary keys are present 
         self._allParametersPresent()
@@ -19,7 +24,10 @@ class Configuration( abc.ABC ):
 
         #remove reduncancies in the 
         self._removeRedundancies() 
-   
+
+        #make sure order is always the same for hashing, json package might not preserve this (Check!)
+        self._parameters = OrderedDict( sorted( self._parameters.items(), key = operator.itemgetter(0) ) )
+
  
     @abc.abstractmethod 
     def _removeRedundancies( self ):
@@ -28,28 +36,28 @@ class Configuration( abc.ABC ):
  
     def _allParametersPresent( self ):
         '''Function that checks whether all necessary parameters for setting up the training are present.'''
-        for key in self.required_parameters:
-            if key not in self.parameters:
+        for key in self._required_parameters:
+            if key not in self._parameters:
                 raise KeyError('Required parameter {} is not present in input configuration'.format( key ) )
 
     
     def _noRogueParametersPresent( self ):
         '''Function that checks whether no unknown parameters are present that are not needed to set up the training.'''
-        for key in self.parameters:
-            if key not in self.required_parameters:
+        for key in self._parameters:
+            if key not in self._required_parameters:
                 raise KeyError('Parameter {} key should not be present in configuration of type {}'.format( key, self.__class__.__name__ ) )
 
 
-    def getParameterSet(self):
-    	return tuple( a.values() )
+    def getParameterTuple(self):
+    	return tuple( self._parameters.values() )
     
     
     def __hash__( self ):
-    	return hash( self.getParameterSet() )
+    	return hash( self.getParameterTuple() )
     	
     
     def __eq__( self, other):
-    	return ( self.getParameterSet() == other.getParameterSet() )
+    	return ( self.getParameterTuple() == other.getParameterTuple() )
     
     
     def __ne__( self, other ):
@@ -57,18 +65,68 @@ class Configuration( abc.ABC ):
 
     
     def __str__( self ):
-        return str( self.parameters )
+        return str( self._parameters )
+
+
+    def name( self ):
+        model_name = ''
+
+        for parameter_name in self._parameters:
+
+            #we want to return a name where the parameter names are separated by underscored
+            #if a parameter has a name including underscores, we will remove them and capitalize the parts of the name instead 
+            parts = parameter_name.split('_')
+            for i, part in enumerate(parts):
+                if i > 0:
+                    part = part.capitalize()
+                model_name += part 
+        
+            #add value to name 
+            value_name = str( self._parameters[parameter_name] )
+            value_name = value_name.replace('.', 'p')
+            model_name += '=' + value_name
+
+            #separate parameters by underscore 
+            model_name += '_'
+        model_name = model_name[:-1]
+
+        return model_name 
+    
+    
+    def __iter__( self ):
+        for name, parameter in self._parameters.items():
+            yield name, parameter
+
+
+    #write out configuration to json file 
+    def toJSON( self, output_file_path ):
+        with open(output_file_path , 'w') as f:
+            json.dump( self._parameters, f )
+
+
+    #initialize configuration from json file
+    @classmethod
+    def fromJSON( cls, input_file_path ):
+        parameter_dict = OrderedDict()
+        with open( input_file_path ) as f:
+            parameter_dict = json.load( f )
+        return cls( **parameter_dict )
+
+
+    def __getitem__( self, key ):
+        return self._parameters[key] 
+        
 
 
 
 #configuration of a Dense neural network
 class DenseNeuralNetworkConfiguration( Configuration ):
-    required_parameters = ['num_hidden_layers', 'units_per_layer', 'optimizer', 'learning_rate', 'learning_rate_decay', 'dropout_first', 'dropout_all', 'dropout_rate']
+    _required_parameters = ['num_hidden_layers', 'units_per_layer', 'optimizer', 'learning_rate', 'learning_rate_decay', 'dropout_first', 'dropout_all', 'dropout_rate']
     
     def _removeRedundancies( self ):
-    	if self.parameters['dropout_all'] and self.parameters['dropout_first']:
-    		self.parameters['dropout_first'] = False
+    	if self._parameters['dropout_all'] and self._parameters['dropout_first']:
+    		self._parameters['dropout_first'] = False
     	
-    	if not( self.parameters['dropout_all'] or self.parameters['dropout_first'] ):
-    		self.parameters['dropout_rate'] = 0
+    	if not( self._parameters['dropout_all'] or self._parameters['dropout_first'] ):
+    		self._parameters['dropout_rate'] = 0
 		
