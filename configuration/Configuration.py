@@ -8,7 +8,7 @@ from collections import OrderedDict
 #abstract base class representing the configuration of a machine learning algorithm
 class Configuration( abc.ABC ):
     
-    _required_parameters = []
+    _required_parameters = set()
     def __init__( self, **input_configuration ):
         
         #parameter dictionary should be ordered to ensure consistent hashing of Configuration with the same parameters
@@ -19,10 +19,10 @@ class Configuration( abc.ABC ):
         #check whether all necessary keys are present 
         self._allParametersPresent()
 
-        #check whether any rogue 
+        #check whether any rogue parameters are present or not 
         self._noRogueParametersPresent()
 
-        #remove reduncancies in the 
+        #remove reduncancies in the configuration
         self._removeRedundancies() 
 
         #make sure order is always the same for hashing, json package might not preserve this (Check!)
@@ -65,7 +65,12 @@ class Configuration( abc.ABC ):
 
     
     def __str__( self ):
-        return str( self._parameters )
+        string_repr =  self.__class__.__name__ + '('
+        for key, value in self:
+            string_repr += key + " = " + str(value) + ', '
+        string_repr = string_repr[:-2]
+        string_repr += ')'
+        return string_repr
 
 
     def name( self ):
@@ -107,7 +112,7 @@ class Configuration( abc.ABC ):
     #initialize configuration from json file
     @classmethod
     def fromJSON( cls, input_file_path ):
-        parameter_dict = OrderedDict()
+        parameter_dict = {}
         with open( input_file_path ) as f:
             parameter_dict = json.load( f )
         return cls( **parameter_dict )
@@ -117,11 +122,20 @@ class Configuration( abc.ABC ):
         return self._parameters[key] 
         
 
+#list of all possible configuration classes, this will be used to determine from the input which learning algorithm should be used 
+configuration_classes = []
+
+#decorator to add each configuration class to the list
+#Use this decorator when defining new configuration classes!
+def registerConfiguration(cls):
+    configuration_classes.append(cls)
+    return cls
 
 
 #configuration of a Dense neural network
+@registerConfiguration
 class DenseNeuralNetworkConfiguration( Configuration ):
-    _required_parameters = ['num_hidden_layers', 'units_per_layer', 'optimizer', 'learning_rate', 'learning_rate_decay', 'dropout_first', 'dropout_all', 'dropout_rate']
+    _required_parameters = {'num_hidden_layers', 'units_per_layer', 'optimizer', 'learning_rate', 'learning_rate_decay', 'dropout_first', 'dropout_all', 'dropout_rate'}
     
     def _removeRedundancies( self ):
     	if self._parameters['dropout_all'] and self._parameters['dropout_first']:
@@ -129,4 +143,33 @@ class DenseNeuralNetworkConfiguration( Configuration ):
     	
     	if not( self._parameters['dropout_all'] or self._parameters['dropout_first'] ):
     		self._parameters['dropout_rate'] = 0
+
+        
+
+#find the configuration class that expects all the keys present in the input dictionary
+def findConfigurationClass( **input_dictionary ):
+    
+    input_keys = set( key for key in input_dictionary )
+    for cls in configuration_classes:
+        if input_keys == cls._required_parameters:
+            return cls
+    
+    #if no appropriate class is found, raise and error
+    raise KeyError('No configuration class expecting the inputs {} is found'.format( input_keys ) )
+
+
+#make a new configuration object from a given input dictionary
+def newConfigurationFromDict( **input_dictionary ):
+    config_class = findConfigurationClass( **input_dictionary )
+    return config_class( **input_dictionary )
+
+
+#make a new configuration object from a given JSON file 
+def newConfigurationFromJSON( input_file_path ):
+    parameter_dict ={}
+    with open( input_file_path ) as f:
+        parameter_dict = json.load( f )
+    return newConfigurationFromDict( **parameter_dict )
+
+    
 		
