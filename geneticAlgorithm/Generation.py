@@ -18,6 +18,10 @@ class Generation:
         for genome in self._population :
             yield genome
 
+    
+    def __len__( self ):
+        return len( self._population )
+
 
     def mutate( self, probability ):
         
@@ -38,9 +42,9 @@ class Generation:
         #keep 50% fittest genomes
         number_of_survivors = len( self._population ) // 2
 
-        #because reproduction makes new genomes in pairs of two we need an even number of survivors so we have to fill in an even number of new genomes
-        if ( number_of_survivors % 2 ) != 0 :
-            number_of_survivors += 1 
+        #because reproduction makes new genomes in pairs of two we want to make sure we need to make an even number of new genomes
+        if ( len( self._population ) - number_of_survivors ) %2 != 0:
+            number_of_survivors += 1
 
         survivors = self._population[:number_of_survivors]
 
@@ -49,7 +53,17 @@ class Generation:
 
         #pick the survivors that will reproduce 
         number_born = len(self._population) - number_of_survivors 
-        reproduction_indices = np.random.choice( np.arange( number_of_survivors ), size = number_born, p = reproduction_probabilities ) 
+
+        #generate pairs of indices representing the individuals that will reproduce 
+        #each pair (two elements in the list) must be different in order to prevent reproduction of a genome with itself
+        reproduction_indices = []
+        for i in range(number_born):
+            random_index = np.random.choice( np.arange( number_of_survivors ), p = reproduction_probabilities )
+            if i%2 != 0:
+                while random_index == reproduction_indices[i - 1]:
+                    random_index = np.random.choice( np.arange( number_of_survivors ), p = reproduction_probabilities )
+            reproduction_indices.append( random_index )
+            
 
         #make new genomes per two
         new_genome_generator = ( self._population[ reproduction_indices[i] ].reproduce( self._population[ reproduction_indices[i + 1] ] ) for i in range(0, number_born, 2) )
@@ -82,8 +96,9 @@ if __name__ == '__main__' :
     NumberOfNodes  = IntTraitClassFactory( range( 1024 ) )
     Depth = IntTraitClassFactory( range( 10 ) )
     Optimizer = StringTraitClassFactory( ['RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam'] )
+    LearningRate = FloatTraitClassFactory( 0.1, 10 )
     
-    genomes = ( Genome( {'number_of_nodes' : NumberOfNodes(0), 'depth' : Depth(0), 'optimizer' : Optimizer('Nadam')} ) for i in range( 100 ) )
+    genomes = ( Genome( {'number_of_nodes' : NumberOfNodes(0), 'depth' : Depth(0), 'optimizer' : Optimizer('Nadam'), 'learning_rate' : LearningRate(1)} ) for i in range( 100 ) )
     
     generation = Generation( genomes )
     generation.randomize()

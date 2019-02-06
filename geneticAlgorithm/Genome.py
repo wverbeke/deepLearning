@@ -28,7 +28,13 @@ class Genome:
         string_representation += ')'
         return string_representation
 
+
+    #iterate over dictionary in Genome 
+    def __iter__( self ):
+        for name, trait in self._trait_dict.items():
+            yield name, trait
     
+
     #randomize the entire Genome 
     def randomize( self ):
         for trait in self._trait_dict.values():

@@ -34,6 +34,11 @@ class Trait( abc.ABC ):
         """Returns boolean checking whether the current value is acceptable."""
 
 
+    @classmethod
+    @abc.abstractmethod
+    def randomTrait( cls ):
+        """return a random trait"""
+    
     # return numeric representation of self._value
     # in most cases this will be the same as self._value, but it might be different when self._value is a string or other non-numeric object
     def _numericValue( self ):
@@ -52,7 +57,7 @@ class Trait( abc.ABC ):
         new_val_2 = (1 - crossover_rate)*other._numericValue() + crossover_rate*self._numericValue() 
         return new_val_1, new_val_2
 
-    
+
 
 #Trait that is an integer number 
 def IntTraitClassFactory( possibleValues ):
@@ -66,11 +71,20 @@ def IntTraitClassFactory( possibleValues ):
 
 
         def mutate( self ):
-            self._value = np.random.choice( self._possibleValues )
+            
+            #convert back to python int since numpy int is not compatible with some python facilities (in particular writing to json)
+            self._value = int( np.random.choice( self._possibleValues ) )
 
 
         def _checkValue( self ):
             return ( self._value in self._possibleValues ) 
+
+        
+        @classmethod
+        def randomTrait( cls ):
+            ret = cls( cls._possibleValues[0] )
+            ret.mutate()
+            return ret
 
 
     return IntTrait
@@ -91,16 +105,23 @@ def FloatTraitClassFactory( min_val, max_val ):
         _max = max_val
 
         def newTraits( self, other ):
-            new_val_1, new_val_2 = self._newParemeters( other )
+            new_val_1, new_val_2 = self._newParameters( other )
             return FloatTrait( new_val_1 ), FloatTrait( new_val_2 )
 
 
         def mutate(self):
-            self._value = np.random.uniform( _min, _max )
+            self._value = np.random.uniform( self._min, self._max )
 
         
         def _checkValue( self ):
             return ( self._value >= self._min and self._value <= self._max )
+
+    
+        @classmethod
+        def randomTrait( cls ):
+            ret = cls( cls._min )
+            ret.mutate()
+            return ret
 
 
     return FloatTrait
@@ -142,6 +163,13 @@ def StringTraitClassFactory( possibleValues ):
 
         def _checkValue( self ):
             return ( self._value in  self._possibleValues )
+
+        
+        @classmethod
+        def randomTrait( cls ):
+            ret = cls( cls._possibleValues[0] )
+            ret.mutate()
+            return ret
 
 
     return StringTrait
