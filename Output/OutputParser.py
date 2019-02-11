@@ -1,64 +1,91 @@
 import os
 import operator
 import sys
-from stringTools import removeLeadingCharacter
+import json
+from collections import OrderedDict 
 
-def listContent( directory, typeCheck):
-    content = []
-    for entry in os.listdir( directory ):
-        full_path = os.path.join( directory, entry )
+#import other parts of framework
+sys.path.insert(0, '../configuration')
+sys.path.insert(0, '../')
+from stringTools import removeLeadingCharacter, canConvertToFloat
+from Configuration import *
+from InputReader import *
+
+
+def listContent( directory_name, typeCheck):
+    for entry in os.listdir( directory_name ):
+        full_path = os.path.join( directory_name, entry )
         if typeCheck( full_path ) :
-            content.append( full_path )
-    return content
+            yield full_path
 
 
-def listSubDirectories( directory ):
-    return listContent( directory, os.path.isdir )
+def listSubDirectories( directory_name ):
+    return listContent( directory_name, os.path.isdir )
 
 
-def listFiles( directory ):
-    return listContent( directory, os.path.isfile )
+def listFiles( directory_name ):
+    return listContent( directory_name, os.path.isfile )
+
+
+#extract model name from configuration or training output file name 
+def extractModelName( file_name ):
+    prefix = file_name.split('/')[-1].split('_')[0]
+    return file_name.split('.')[0].split(prefix + '_')[-1]
 
 
 class OutputParser:
-    def __init__(self, output_directory):
 
-        self.output_directory = output_directory
-        self.AUC_map = {}
+    def __init__( self, output_directory_name ):
 
-        #list all files in output directory
-        sub_directories = listSubDirectories( self.output_directory )
+        self._output_directory_name = output_directory_name
+        self._AUC_map = OrderedDict()
+
+        #each model is assumed to have a file with the training output (named trainingOutput_ followed by the model name), and a file with the configuration ( named configuration_ followed by the model name )
+        output_files = [ os.path.join( subdirectory, f ) for subdirectory, _, files in os.walk( self._output_directory_name ) for f in files ]
+
+        configuration_files = [ f for f in output_files if 'configuration_' in f  ]
+        training_output_files = [ f for f in output_files if 'trainingOutput_' in f ]
+
+        file_pairs = ( (train, config) for config in configuration_files for train in training_output_files if extractModelName( train ) == extractModelName( config ) )
         
-        for directory in sub_directories : 
-            files = listFiles( directory )
-            files = [ f for f in files if f.split('.')[-1] == 'txt' ]
+        for train, config in file_pairs:
+
+            with open( train ) as trainingOutput:
+                AUC_line_counter = 0
+                for line in trainingOutput.readlines():
+				
+                    #expect the output file to contain one line in the following format: "validation set ROC integral (AUC) = X" 
+                    #make the code slightly more robust for potential changes in the output format
+                    if ('AUC' in line) or ('ROC integral' in line ):
+                        AUC_line_counter += 1
+                        numbers_in_line = [ float(s) for s in line.split() if canConvertToFloat(s) ]
+                        if len( numbers_in_line ) != 1 or AUC_line_counter > 1:
+                            raise IndexError('Expect to find exactly 1 number representing the ROC integral in {}, but found {}.'.format(trainingOutput_file_name, len( numbers_in_line) ) )
+                        AUC = numbers_in_line[0]
+
+            #read model configuration from configuration file 
+            model_configuration = newConfigurationFromJSON( config )
             
-            for file_name in files :
-                with open( file_name ) as f:
-                    for line in f.readlines():
-                        if 'AUC' in line :
-                            line = line.replace('validation set ROC integral (AUC) = ', '')
-                            AUC = float( line )
-                            model_name = directory.split('/')[-1]
-                            self.AUC_map[model_name] = AUC
-                  
- 
+            #fill entry in in map collecting training information 
+            self._AUC_map[model_configuration] = AUC
+
+
     def rankModels(self):
-        self.ranked_models = sorted( list(self.AUC_map.items()),  key=operator.itemgetter(1), reverse=True )
+        self.AUC_map = OrderedDict( sorted( self._AUC_map.items(), key = operator.itemgetter(1), reverse=True ) )
 
 
     def printBestModels(self):
-        for i, model in enumerate( self.ranked_models ):
+        for i, model in enumerate( self._AUC_map.items() ):
             if i >= 10:
                 break
             print( '########################################################') 
             print( 'Rank {}:'.format( i + 1 ) ) 
-            print( model[0] )
+            print( model[0].name() )
             print( 'validation set ROC integral (AUC) = {}'.format( model[1] ) )
 
     
     def outputName(self):
-        output_name = self.output_directory 
+        output_name = self._output_directory_name
         output_name = output_name.replace( 'output', '' )
         output_name = removeLeadingCharacter( output_name, '_' )
         return output_name
@@ -67,18 +94,27 @@ class OutputParser:
     def copyBestModelsOutput(self):
         best_model_directory = 'bestModels_{}'.format( self.outputName() )
         os.system('mkdir -p {}'.format( best_model_directory ) )
-        for i, model in enumerate( self.ranked_models ):
+        for i, model in enumerate( self._AUC_map.items() ):
             if i >= 10:
                 break
-            os.system('cp -r {0}/{1} {2}/model_rank_{3}'.format( self.output_directory, model[0], best_model_directory, i + 1 ) )
+            os.system('cp -r {0}/{1} {2}/model_rank_{3}'.format( self.output_directory, model[0].name(), best_model_directory, i + 1 ) )
 
 
     def bestModels(self):
         self.rankModels()
         self.copyBestModelsOutput()
         self.printBestModels()
-       
 
+    
+    def toGeneration(self, input_reader):
+        config_generator = ( config for config in self._AUC_map.keys() )
+        return neuralNetworkConfigurationsAndInputToGeneration( config_generator , input_reader )
+
+
+    def getAUC( self, config ):
+        return self._AUC_map[config]
+
+        
 
 if __name__ == '__main__' :
     
