@@ -5,6 +5,7 @@ import operator
 from collections import OrderedDict
 
 
+
 #abstract base class representing the configuration of a machine learning algorithm
 class Configuration( abc.ABC ):
     
@@ -72,6 +73,10 @@ class Configuration( abc.ABC ):
         string_repr += ')'
         return string_repr
 
+    
+    def __repr__( self ):
+        return self.__str__()
+
 
     def name( self ):
         model_name = ''
@@ -123,34 +128,20 @@ class Configuration( abc.ABC ):
         
 
 #list of all possible configuration classes, this will be used to determine from the input which learning algorithm should be used 
-configuration_classes = []
+_configuration_classes = []
 
 #decorator to add each configuration class to the list
 #Use this decorator when defining new configuration classes!
 def registerConfiguration(cls):
-    configuration_classes.append(cls)
+    _configuration_classes.append(cls)
     return cls
 
-
-#configuration of a Dense neural network
-@registerConfiguration
-class DenseNeuralNetworkConfiguration( Configuration ):
-    _required_parameters = {'num_hidden_layers', 'units_per_layer', 'optimizer', 'learning_rate', 'learning_rate_decay', 'dropout_first', 'dropout_all', 'dropout_rate'}
-    
-    def _removeRedundancies( self ):
-    	if self._parameters['dropout_all'] and self._parameters['dropout_first']:
-    		self._parameters['dropout_first'] = False
-    	
-    	if not( self._parameters['dropout_all'] or self._parameters['dropout_first'] ):
-    		self._parameters['dropout_rate'] = 0
-
-        
 
 #find the configuration class that expects all the keys present in the input dictionary
 def findConfigurationClass( **input_dictionary ):
     
-    input_keys = set( key for key in input_dictionary )
-    for cls in configuration_classes:
+    input_keys = { key for key in input_dictionary }
+    for cls in _configuration_classes:
         if input_keys == cls._required_parameters:
             return cls
     

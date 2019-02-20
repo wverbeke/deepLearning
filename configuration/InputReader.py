@@ -3,13 +3,17 @@ import sys
 import itertools
 
 
-#include other parts of framework
-sys.path.insert(0, '../')
-sys.path.insert(0, '../geneticAlgorithm')
-from Trait import IntTraitClassFactory, FloatTraitClassFactory, StringTraitClassFactory, BoolTrait
-from Genome import Genome
-from Generation import Generation
-from Configuration import *
+#include other parts of framework (using absolute imports from main directory)
+import os
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert(0, main_directory )
+
+#sys.path.insert(0, '../')
+#sys.path.insert(0, '../geneticAlgorithm')
+from geneticAlgorithm.Trait import IntTraitClassFactory, FloatTraitClassFactory, StringTraitClassFactory, BoolTrait
+from geneticAlgorithm.Genome import Genome
+from geneticAlgorithm.Generation import Generation
+from configuration.Configuration import newConfigurationFromDict, Configuration
  
 
 
@@ -38,6 +42,8 @@ class TrainingDataReader( Configuration ):
 class GeneticAlgorithmInputReader:
 
     def __init__( self, configuration_file ):
+
+        #set up up trait classes for genetic algorithm
         self._trait_classes = {}
         for key, value in configuration_file.parameter_ranges.items():
 
@@ -58,18 +64,22 @@ class GeneticAlgorithmInputReader:
                     self._trait_classes[key] = StringTraitClassFactory( value )
 
                 else:
-                    raise TypeError('Error in ') 
+                    raise TypeError('Parameter of unknown format {}'.format( key ) ) 
 
             else:
-                raise TypeError('')
+                raise TypeError('Parameter of unexpected type {}'.format( key ) )
+
+        #population size 
+        self._population_size = configuration_file.population_size 
 
 
     def randomGenome( self ):
         return Genome( { key : traitClass.randomTrait() for key, traitClass in self._trait_classes.items() } )
 
     
-    def randomGeneration( self, size ):
-        genome_generator = ( self.randomGenome() for i in range(size) )
+    def randomGeneration( self, size = None ):
+        target_size = self._population_size if size is None else size 
+        genome_generator = ( self.randomGenome() for i in range( target_size ) )
         return Generation( genome_generator )
 
     
@@ -83,23 +93,27 @@ class GeneticAlgorithmInputReader:
         trait_dict = { name : self._trait_classes[name](value) for name, value in value_dict.items() }
         return Genome(trait_dict)
 
+    
+    def population_size( self ):
+        return self._population_size
+
 
     
-def genomeToNeuralNetworkConfiguration( genome ):
+def genomeToConfiguration( genome ):
     configuration_dict = { name : trait.value() for name, trait in genome }
-    return DenseNeuralNetworkConfiguration( **configuration_dict )
+    return newConfigurationFromDict( **configuration_dict )
 
 
-def generationToNeuralNetworkConfigurations( generation ):
-    return list( genomeToNeuralNetworkConfiguration( genome ) for genome in generation )
+def generationToConfigurations( generation ):
+    return list( genomeToConfiguration( genome ) for genome in generation )
 
 
-def neuralNetworkConfigurationAndInputToGenome( configuration, inputReader):
+def configurationAndInputToGenome( configuration, inputReader):
     return inputReader.dictionaryToGenome( {name : parameter for name, parameter in configuration} )
 
 
-def neuralNetworkConfigurationsAndInputToGeneration( configurations, inputReader):
-    return Generation( neuralNetworkConfigurationAndInputToGenome( config, inputReader ) for config in configurations )
+def configurationsAndInputToGeneration( configurations, inputReader):
+    return Generation( configurationAndInputToGenome( config, inputReader ) for config in configurations )
     
 
 
@@ -132,17 +146,35 @@ class GridScanInputReader:
 
 
 
+#function that determines whether the input file is aimed at a genetic algorithm, or at a grid scan
+def isGeneticAlgorithmInput( configuration_file ):
+
+    #make sure the flag is present 
+    if not hasattr( configuration_file, 'use_genetic_algorithm') :
+        raise KeyError('{} must have a boolean attribute "use_genetic_algorithm" to specify whether to use a grid scan or genetic algorithm to optimize the models hyperparameters')
+
+    #check whether the flag is a boolean
+    flag = configuration_file.use_genetic_algorithm
+    if not isinstance( flag, bool ) :
+        raise TypeError('Expected the flag "use_genetic_algorithm" in {} to be a boolean!'.format( configuration_file ) )
+
+    return flag
+
+
+
 if __name__ == '__main__' :
+
+    from configuration.LearningAlgorithms import DenseNeuralNetworkConfiguration
 
     #code to test GeneticAlgorithmInputReader
     genetic_input_file = __import__('input_geneticAlgorithm')
     genetic_input_reader = GeneticAlgorithmInputReader( genetic_input_file )
     genome = genetic_input_reader.randomGenome()
-    configuration = genomeToNeuralNetworkConfiguration( genome )
-    genome_2 = neuralNetworkConfigurationAndInputToGenome( configuration, genetic_input_reader )
+    configuration = genomeToConfiguration( genome )
+    genome_2 = configurationAndInputToGenome( configuration, genetic_input_reader )
     generation = genetic_input_reader.randomGeneration( 1000 )
-    configurations = generationToNeuralNetworkConfigurations( generation )
-    new_generation = neuralNetworkConfigurationsAndInputToGeneration( configurations, genetic_input_reader )
+    configurations = generationToConfigurations( generation )
+    new_generation = configurationsAndInputToGeneration( configurations, genetic_input_reader )
 
     #code to test GridScanInputReader
     grid_input_file = __import__('input') 

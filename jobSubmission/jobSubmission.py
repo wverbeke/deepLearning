@@ -1,29 +1,21 @@
 """
-Functions for submitting jobs to the T2 cluster
+Functions for submitting jobs to a cluster 
 """
 
 import os
 import time
 
-
-def setupCMSSW():
-    recent_cmssw_release = 'CMSSW_9_4_10'
-    os.system('cmsrel {}'.format( recent_cmssw_release) )
-    os.system('cd {}/src/; cmsenv'.format( recent_cmssw_release) )
-
-
-def getCMSSWDirectory():
-    if 'CMSSW_BASE' not in os.environ :
-        return 'A'
-        setupCMSSW()
-    cmssw_dir = os.environ['CMSSW_BASE']
-    return cmssw_dir 
+#import other parts of framework
+import sys
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) ) 
+sys.path.insert( 0, main_directory )
+from jobSubmission.CMSSW import getCMSSWDirectory
 
 
-def initializeJobScript( file_name ):
-    script = open( file_name, 'w' )
-    recent_scram_arch = 'slc6_amd64_gcc630'
-    script.write('export SCRAM_ARCH={}\n'.format(recent_scram_arch) )
+def newJobScript( script_name ):
+
+    #set up CMSSW on worker node
+    script = open( script_name, 'w' )
     script.write('cd {}/src\n'.format( getCMSSWDirectory() ) )
     script.write('source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
     script.write('eval `scram runtime -sh`\n')
@@ -36,16 +28,47 @@ def initializeJobScript( file_name ):
     return script
 
 
+def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_threads = 1):
+    
+    #make script
+    script = newJobScript( script_name )
+
+    #add command to script
+    script.write( command_string )
+
+    #close script
+    script.close()
+
+    #submit job
+    #EXPAND THIS PART TO WORK FOR DIFFERENT JOB SUBMISSION SYSTEMS
+    #IF POSSIBLE AUTOMATICALLY DETECT THE SUBMISSION SYSTEM
+    submitQSubJob( script_name, wall_time, num_threads )
+
+
+
+def testShellCommand( command_string ):
+
+    #attempt to run command
+    try: 
+        subprocess.check_output(command_string , shell=True , stderr=subprocess.STDOUT)
+        return True
+
+    # command does not exist 
+    except subprocess.CalledProcessError:
+        return False
+
+
+
 #submit script of given name as a job with given wall-time
-def submitJobScript( script_name, wall_time = '24:00:00', num_threads = 1):
+def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1):
 
     #keep attempting submission until it succeeds
     while True:
-        submission_command = 'qsub {0} -l walltime={1}'.format( script_name, wall_time )
+        submission_command = 'qsub {} -l walltime={}'.format( script_name, wall_time )
         if num_threads > 1:
             submission_command += ' -lnodes=1:ppn={}'.format(num_threads)
        
-        #run submission command  
+        #run submission command and pipe output to temporary file
         os.system( submission_command + ' > output_temp.txt 2>> output_temp.txt')
 
         #check output of submission command for errors 

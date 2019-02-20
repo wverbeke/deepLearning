@@ -1,7 +1,11 @@
 import numpy as np
 
 #import other parts of code 
-from Trait import IntTraitClassFactory, FloatTraitClassFactory, StringTraitClassFactory, BoolTrait
+import os
+import sys
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert(0, main_directory )
+from geneticAlgorithm.Trait import IntTraitClassFactory, FloatTraitClassFactory, StringTraitClassFactory, BoolTrait
 
 
 #A genome is a collection of different kinds of Traits 

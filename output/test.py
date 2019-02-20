@@ -1,14 +1,16 @@
 import os
 import sys
 import numpy as np
+import time
 
 
 #include other parts of framework
-sys.path.insert(0, '../configuration')
-from Configuration import newConfigurationFromJSON
-from InputReader import *
-from OutputParser import OutputParser
-import time
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert( 0, main_directory )
+from configuration.Configuration import newConfigurationFromJSON
+from configuration.InputReader import *
+from configuration.LearningAlgorithms import *
+from output.OutputParser import OutputParser
 
 
 
@@ -30,7 +32,7 @@ if __name__ == '__main__' :
 
     for i in range(10):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        configurations = generationToNeuralNetworkConfigurations( generation )
+        configurations = generationToConfigurations( generation )
 
         #make output directory for testing
         output_directory_name = 'output_test'
@@ -58,11 +60,11 @@ if __name__ == '__main__' :
         print( 'write_counter = {}'.format(write_counter) )
             
         output_parser = OutputParser( output_directory_name )
-        print( output_parser.outputName() )
+        print( output_parser.analysisName() )
         generation = output_parser.toGeneration( input_reader )
 
         def fitness_func( genome ):
-            config = genomeToNeuralNetworkConfiguration( genome )
+            config = genomeToConfiguration( genome )
             return output_parser.getAUC( config )
 
         print( 'old_generation_size = {}'.format(len(generation) ) )

@@ -9,3 +9,11 @@ def removeLeadingCharacter( string , character):
         new_string = new_string[1:]
     return new_string
 
+
+#check if a string can be converted to Float
+def canConvertToFloat( string ):
+    try :
+        float( string )
+        return True
+    except ValueError:
+        return False

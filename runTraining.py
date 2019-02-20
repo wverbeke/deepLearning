@@ -1,135 +1,189 @@
 import os
 import sys
-
-#check if atleast one additional argument is given
-if len( sys.argv ) < 2:
-    print( 'Error: incorrect number of arguments given to script.')
-    print( 'Usage: <python runTraining.py configuration.py>')
-    sys.exit()
-
-#read input file 
-configuration_file_name = sys.argv[1]
-configuration_file = __import__( configuration_file_name.replace('.py', '') )
-
-from Dataset import Data
-from jobSubmission import * 
-from ConfigurationParser import ConfigurationParser
-from stringTools import removeLeadingCharacter
-from Optimizer import Optimizer
 import argparse
 
-def trainAndEvaluateModel( model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate):
+
+#import other parts of code 
+from Dataset import Data
+
+#from configuration import InputReader
+from configuration.Configuration import newConfigurationFromDict
+from configuration.LearningAlgorithms import *
+from configuration.InputReader import *
+from jobSubmission.jobSubmission import submitProcessJob 
+from miscTools.listContent import listSubDirectories
+from output.OutputParser import OutputParser
+
+
+def trainAndEvaluateModel( training_configuration, model_configuration ):
 
     #make sure correct path is given for input root file
     root_file_name_full = os.path.join( os.path.dirname(os.path.abspath( __file__) ) , configuration_file.root_file_name )
 
-    #make keras optimizer out of optimizer information
-    keras_optimizer = Optimizer( optimizer_name, relative_learning_rate, relative_learning_rate_decay ).kerasOptimizer() 
-
     #train model
-    classification_data = Data(
-        root_file_name_full, 
-        configuration_file.signal_tree, 
-        configuration_file.background_tree, 
-        configuration_file.branch_list, 
-        configuration_file.weight_branch, 
-        configuration_file.validation_fraction, 
-        configuration_file.test_fraction, 
-        configuration_file.only_positive_weights
-    )
+    classification_data = Data( training_configuration )
 
-    classification_data.trainDenseClassificationModel(
-        model_name = model_name,
-    	num_hidden_layers = num_hidden_layers, 
-    	units_per_layer = units_per_layer, 
-    	activation = 'relu', 
-        optimizer = keras_optimizer,
-    	dropout_first = dropout_first,
-    	dropout_all = dropout_all, 
-    	dropout_rate = dropout_rate, 
-    	num_epochs = 200,
-    	num_threads = 1
-    )
+    classification_data.trainAndEvaluateModel( model_configuration )
 
 
-def outputDirectory(configuration_file_name):
-    configuration_file_name = configuration_file_name.replace('.py', '') 
-    configuration_file_name = configuration_file_name.replace('input', '')
-    configuration_file_name = removeLeadingCharacter( configuration_file_name, '_' )
-    output_directory = 'output_{}'.format( configuration_file_name ) if configuration_file_name else 'output'
-    return output_directory 
 
-
-def submitTrainingJob(model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate):
-
-    #make script that will be submitted 
-    script = initializeJobScript('train_keras_model.sh')
-
-    #make directory and switch to it in script 
-    output_directory = outputDirectory( configuration_file_name ) 
+def submitTrainingJob( configuration, output_directory ):
+    
+    #model name 
+    model_name = configuration.name() 
+    
+    #new directory for job output
     os.system('mkdir -p {}/{}'.format( output_directory, model_name ) )
-    script.write( 'cd {}/{}\n'.format( output_directory, model_name ) )
-
-    #run training code 
-    training_command = 'python {0} {1}'.format( os.path.realpath(__file__), configuration_file_name )
-    training_command += ' {0} {1} {2} {3} {4} {5} {6} {7} {8}'.format( model_name, num_hidden_layers, units_per_layer, optimizer_name, relative_learning_rate, relative_learning_rate_decay, dropout_first, dropout_all, dropout_rate)
-
+    
+    #make the command to run, starting with switching to the output directory
+    command_string = 'cd {}/{}\n'.format( output_directory, model_name )
+    
+    #add the training to the command
+    configuration_file_name = sys.argv[1]
+    command_string += 'python runTraining.py {}'.format( configuration_file_name ) 
+    for name, value in configuration:
+        command_string += ' {}={}'.format( name, value )
+    
     #pipe output to text files 
     log_file = model_name + '_log.txt'
     error_file = model_name + '_err.txt'
-    training_command += ' > {} 2>{} '.format( log_file, error_file) 
-    script.write( training_command + '\n')
-    script.close()
-
-    #submit script to cluster 
-    submitJobScript( 'train_keras_model.sh' )    
-    #with open( 'train_keras_model.sh' ) as f :
-    #    print( f.read() )
+    command_string += ' > {} 2>{} '.format( log_file, error_file)
     
+    #print( command_string )
+    #submit this process 
+    submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = 1 )
 
- 
+
+#convert string to either float, integer or boolean, or keep it as a string
+def stringToArgumentType( string ):
+    ret = string
+    try:
+        ret = int( ret )
+    except ValueError:
+    	try:
+    		ret = float( ret )
+    	except ValueError: 
+
+            if ret == 'True':
+                return True
+            elif ret == 'False':
+                return False
+    return ret
+
+
+#check how many generations of model trainings already happened when using a genetic algorithm
+def lastGenerationNumber( output_directory_name ):
+    subdirectories = ( subdir for subdir in listSubDirectories( output_directory_name ) if 'generation_' in subdir )
+    generation_numbers = ( int( subdir.split('_')[-1] ) for subdir in subdirectories )
+    
+    #previous generations have been trained 
+    try:
+        return max( generation_numbers )
+    
+    #training the first generation
+    except FileNotFoundError:
+        os.system('mkdir {}'.format( output_directory_name ) )
+        return 0
+    except ValueError:
+        return 0
+        
+
+
 if __name__ == '__main__' :
 
-    if len( sys.argv ) > 2:    
-        parser = argparse.ArgumentParser()
-        parser.add_argument('configuration_file_name', type=str)
-        parser.add_argument('model_name', type=str)
-        parser.add_argument('num_hidden_layers', type=int)
-        parser.add_argument('units_per_layer', type=int)
-        parser.add_argument('optimizer_name', type=str)
-        parser.add_argument('relative_learning_rate', type=float)
-        parser.add_argument('relative_learning_rate_decay', type=float)
-        parser.add_argument('dropout_first', type=str)
-        parser.add_argument('dropout_all', type=str)
-        parser.add_argument('dropout_rate', type=float)
-        args = parser.parse_args()
+    #check if atleast one additional argument is given, the program expects a configuration file to run
+    if len( sys.argv ) < 2:
+        print( 'Error: incorrect number of arguments given to script.')
+        print( 'Usage: <python runTraining.py configuration.py>')
+        sys.exit()
 
-        trainAndEvaluateModel( 
-            args.model_name, 
-            args.num_hidden_layers, 
-            args.units_per_layer, 
-            args.optimizer_name, 
-            args.relative_learning_rate, 
-            args.relative_learning_rate_decay, 
-            ( args.dropout_first == 'True' ),
-            ( args.dropout_all == 'True' ),
-            args.dropout_rate
-        )
+    #read configuration file 
+    configuration_file_name = sys.argv[1]
+    configuration_file = __import__( configuration_file_name.replace('.py', '') )
+
+    if len( sys.argv ) > 2:    
+
+        #build dictionary from command line arguments
+        configuration_dict = {}
+        for argument in sys.argv[2:] :
+            if not '=' in argument:
+                raise ValueError('Each command line must be of the form x=y in order to form a dictionary')
+        
+            key, value = argument.split('=')
+            configuration_dict[key] = stringToArgumentType( value )
+        
+        #build model configuration from dictionary
+        configuration = newConfigurationFromDict( **configuration_dict )
+        
+        #train model from configuration 
+        trainAndEvaluateModel( TrainingDataReader( configuration_file), configuration )
 
     else :
 
-        configuration_parser = ConfigurationParser( configuration_file )
-        num_networks = configuration_parser.numberOfConfigurations()
-        if num_networks > 10000:
-            print( 'Error : requesting to train more than 10000 neural networks. This will be too much for the T2 cluster to handle.' )
-            print( 'Aborting.')
+        #list of neural network configurations to process 
+        configuration_list = [] 
+        
+        #directory for job output
+        output_directory_name = 'output_{}'.format( configuration_file_name.replace('input_', '').replace('.py', '') )
+
+        #limit the number of model trainings that can be submitted 
+        max_number_of_trainings = 2500
+        number_of_models = 0
+
+        #determine whether to run a genetic algorithm or a grid scan 
+        if isGeneticAlgorithmInput( configuration_file ) :
+            print( 'isGeneticAlgo' )
+
+            last_generation_number =  lastGenerationNumber( output_directory_name )
+            generation_subdirectory = 'generation_{}'.format( last_generation_number + 1 )
+            output_directory_name = output_directory_name + '/' + generation_subdirectory
+
+            #set up genetic algorithm
+            genetic_algo_configuration = GeneticAlgorithmInputReader( configuration_file )
+            number_of_models = genetic_algo_configuration.population_size()
+    
+            #no previous generation has been trained yet, make a random population as the first generation
+            if last_generation_number == 0:
+                first_generation = genetic_algo_configuration.randomGeneration()
+                configuration_list = InputReader.generationToConfigurations( first_generation )
+
+            #apply genetic algorithm to make the next generation
+            else:
+
+                #read output of previous generation 
+                last_generation_subdirectory = 'generation_{}'.format( last_generation_number )
+                output_last_generation = output_directory_name + '/' + last_generation_subdirectory
+                output_parser = OutputParser( output_directory_name )
+                
+                #convert the output to a generation and evolve it 
+                #the fitness of a model is its AUC
+                def fitness_func( genome ):
+                	config = genomeToNeuralNetworkConfiguration( genome )
+                	return output_parser.getAUC( config ) 
+                
+                generation = output_parser.toGeneration( genetic_algo_configuration )
+                generation = generation.newGeneration( fitness_func )
+                generation.mutate( 0.3 )
+                
+                configuration_list = InputReader.generationToConfigurations( generation )
+
+		#grid scan
+        else:
+            grid_scan_configuration = GridScanInputReader( configuration_file )
+            configuration_list = [ config for config in grid_scan_configuration ]
+
+            number_of_models = len( grid_scan_configuration )
+
+            
+        #MAKE THIS MORE ROBUST BY CHECKING THE NUMBER OF RUNNING JOBS FOR THE USER
+        if number_of_models > max_number_of_trainings : 
+            print( 'Error : requesting to train {} models. The cluster only allows {} jobs to be submitted.'.format( number_of_models, max_number_of_trainings ) )
+            print( 'Please modify the configuration file to train less models.')
             sys.exit()
 
-        for configuration in configuration_parser.yieldVariation():
-            configuration_name = configuration[0]
-            configuration_parameters = configuration[1]
-            submitTrainingJob( configuration_name, *configuration_parameters )
+        for configuration in configuration_list:
+            submitTrainingJob( configuration, output_directory_name )
 
         print( '########################################################' )
-        print( 'Submitted {} neural networks for training.'.format( num_networks ) )
+        print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
         print( '########################################################' )

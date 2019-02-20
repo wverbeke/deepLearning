@@ -5,32 +5,18 @@ import json
 from collections import OrderedDict 
 
 #import other parts of framework
-sys.path.insert(0, '../configuration')
-sys.path.insert(0, '../')
-from stringTools import removeLeadingCharacter, canConvertToFloat
-from Configuration import *
-from InputReader import *
-
-
-def listContent( directory_name, typeCheck):
-    for entry in os.listdir( directory_name ):
-        full_path = os.path.join( directory_name, entry )
-        if typeCheck( full_path ) :
-            yield full_path
-
-
-def listSubDirectories( directory_name ):
-    return listContent( directory_name, os.path.isdir )
-
-
-def listFiles( directory_name ):
-    return listContent( directory_name, os.path.isfile )
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert( 0, main_directory )
+from miscTools.stringTools import canConvertToFloat
+from configuration.Configuration import *
+from configuration.InputReader import *
 
 
 #extract model name from configuration or training output file name 
 def extractModelName( file_name ):
     prefix = file_name.split('/')[-1].split('_')[0]
     return file_name.split('.')[0].split(prefix + '_')[-1]
+
 
 
 class OutputParser:
@@ -84,20 +70,17 @@ class OutputParser:
             print( 'validation set ROC integral (AUC) = {}'.format( model[1] ) )
 
     
-    def outputName(self):
-        output_name = self._output_directory_name
-        output_name = output_name.replace( 'output', '' )
-        output_name = removeLeadingCharacter( output_name, '_' )
-        return output_name
+    def analysisName(self):
+        return self._output_directory_name.replace('output_', '')
 
     
     def copyBestModelsOutput(self):
-        best_model_directory = 'bestModels_{}'.format( self.outputName() )
+        best_model_directory = 'bestModels_{}'.format( self.analysisName() )
         os.system('mkdir -p {}'.format( best_model_directory ) )
         for i, model in enumerate( self._AUC_map.items() ):
             if i >= 10:
                 break
-            os.system('cp -r {0}/{1} {2}/model_rank_{3}'.format( self.output_directory, model[0].name(), best_model_directory, i + 1 ) )
+            os.system('cp -r {0}/{1} {2}/model_rank_{3}'.format( self._output_directory_name, model[0].name(), best_model_directory, i + 1 ) )
 
 
     def bestModels(self):
@@ -108,7 +91,7 @@ class OutputParser:
     
     def toGeneration(self, input_reader):
         config_generator = ( config for config in self._AUC_map.keys() )
-        return neuralNetworkConfigurationsAndInputToGeneration( config_generator , input_reader )
+        return configurationsAndInputToGeneration( config_generator , input_reader )
 
 
     def getAUC( self, config ):
