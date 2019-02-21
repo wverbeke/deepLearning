@@ -1,10 +1,10 @@
 import os
 import sys
-import argparse
+import subprocess
 
 
 #import other parts of code 
-from Dataset import Data
+from dataset.ModelTrainingSetup import ModelTrainingSetup
 
 #from configuration import InputReader
 from configuration.Configuration import newConfigurationFromDict
@@ -21,9 +21,9 @@ def trainAndEvaluateModel( training_configuration, model_configuration ):
     root_file_name_full = os.path.join( os.path.dirname(os.path.abspath( __file__) ) , configuration_file.root_file_name )
 
     #train model
-    classification_data = Data( training_configuration )
+    classification_setup = ModelTrainingSetup( training_configuration )
 
-    classification_data.trainAndEvaluateModel( model_configuration )
+    classification_setup.trainAndEvaluateModel( model_configuration )
 
 
 
@@ -49,9 +49,9 @@ def submitTrainingJob( configuration, output_directory ):
     error_file = model_name + '_err.txt'
     command_string += ' > {} 2>{} '.format( log_file, error_file)
     
-    #print( command_string )
+    print( command_string )
     #submit this process 
-    submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = 1 )
+    #submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = 1 )
 
 
 #convert string to either float, integer or boolean, or keep it as a string
@@ -86,7 +86,91 @@ def lastGenerationNumber( output_directory_name ):
         return 0
     except ValueError:
         return 0
+
+
+def submitTrainingJobs( configuration_file_name ):
+
+    configuration_file = __import__( configuration_file_name.replace('.py', '') )
+    
+    #list of neural network configurations to process 
+    configuration_list = []
+    
+    #directory for job output
+    output_directory_name = 'output_{}'.format( configuration_file_name.replace('input_', '').replace('.py', '') )
+    
+    #limit the number of model trainings that can be submitted 
+    max_number_of_trainings = 2500
+    number_of_models = 0
+    
+    #determine whether to run a genetic algorithm or a grid scan 
+    if isGeneticAlgorithmInput( configuration_file ) :
+        print( 'isGeneticAlgo' )
+    
+        last_generation_number =  lastGenerationNumber( output_directory_name )
+        generation_subdirectory = 'generation_{}'.format( last_generation_number + 1 )
+        output_directory_name = output_directory_name + '/' + generation_subdirectory
+    
+        #set up genetic algorithm
+        genetic_algo_configuration = GeneticAlgorithmInputReader( configuration_file )
+        number_of_models = genetic_algo_configuration.population_size()
+    
+        #no previous generation has been trained yet, make a random population as the first generation
+        if last_generation_number == 0:
+            first_generation = genetic_algo_configuration.randomGeneration()
+            configuration_list = InputReader.generationToConfigurations( first_generation )
+    
+        #apply genetic algorithm to make the next generation
+        else:
+    
+            #read output of previous generation 
+            last_generation_subdirectory = 'generation_{}'.format( last_generation_number )
+            output_last_generation = output_directory_name + '/' + last_generation_subdirectory
+            output_parser = OutputParser( output_directory_name )
+    
+            #convert the output to a generation and evolve it 
+            #the fitness of a model is its AUC
+            def fitness_func( genome ):
+                config = genomeToNeuralNetworkConfiguration( genome )
+                return output_parser.getAUC( config )
+    
+            generation = output_parser.toGeneration( genetic_algo_configuration )
+            generation = generation.newGeneration( fitness_func )
+            generation.mutate( 0.3 )
+    
+            configuration_list = InputReader.generationToConfigurations( generation )
+    
+    #grid scan
+    else:
+        grid_scan_configuration = GridScanInputReader( configuration_file )
+        configuration_list = [ config for config in grid_scan_configuration ]
+    
+        number_of_models = len( grid_scan_configuration )
+    
+    #MAKE THIS MORE ROBUST BY CHECKING THE NUMBER OF RUNNING JOBS FOR THE USER
+    if number_of_models > max_number_of_trainings :
+        print( 'Error : requesting to train {} models. The cluster only allows {} jobs to be submitted.'.format( number_of_models, max_number_of_trainings ) )
+        print( 'Please modify the configuration file to train less models.')
+        sys.exit()
+    
+    job_id_list = []
+    for configuration in configuration_list:
+        job_id = submitTrainingJob( configuration, output_directory_name )
+        job_id_list.append( job_id )
+    
+    if isGeneticAlgorithmInput( configuration_file ):
+        watcher_command = 'python geneticAlgorithmWatcher.py '
+        watcher_command += configuration_file_name 
+        for job in job_id_list:
+            watcher_command += ' {}'.format( job ) 
         
+        #run the watcher script in the background
+        subprocess.Popen( [ wathcer_command ] )
+
+    print( '########################################################' )
+    print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
+    print( '########################################################' )
+
+      
 
 
 if __name__ == '__main__' :
@@ -119,71 +203,4 @@ if __name__ == '__main__' :
         trainAndEvaluateModel( TrainingDataReader( configuration_file), configuration )
 
     else :
-
-        #list of neural network configurations to process 
-        configuration_list = [] 
-        
-        #directory for job output
-        output_directory_name = 'output_{}'.format( configuration_file_name.replace('input_', '').replace('.py', '') )
-
-        #limit the number of model trainings that can be submitted 
-        max_number_of_trainings = 2500
-        number_of_models = 0
-
-        #determine whether to run a genetic algorithm or a grid scan 
-        if isGeneticAlgorithmInput( configuration_file ) :
-            print( 'isGeneticAlgo' )
-
-            last_generation_number =  lastGenerationNumber( output_directory_name )
-            generation_subdirectory = 'generation_{}'.format( last_generation_number + 1 )
-            output_directory_name = output_directory_name + '/' + generation_subdirectory
-
-            #set up genetic algorithm
-            genetic_algo_configuration = GeneticAlgorithmInputReader( configuration_file )
-            number_of_models = genetic_algo_configuration.population_size()
-    
-            #no previous generation has been trained yet, make a random population as the first generation
-            if last_generation_number == 0:
-                first_generation = genetic_algo_configuration.randomGeneration()
-                configuration_list = InputReader.generationToConfigurations( first_generation )
-
-            #apply genetic algorithm to make the next generation
-            else:
-
-                #read output of previous generation 
-                last_generation_subdirectory = 'generation_{}'.format( last_generation_number )
-                output_last_generation = output_directory_name + '/' + last_generation_subdirectory
-                output_parser = OutputParser( output_directory_name )
-                
-                #convert the output to a generation and evolve it 
-                #the fitness of a model is its AUC
-                def fitness_func( genome ):
-                	config = genomeToNeuralNetworkConfiguration( genome )
-                	return output_parser.getAUC( config ) 
-                
-                generation = output_parser.toGeneration( genetic_algo_configuration )
-                generation = generation.newGeneration( fitness_func )
-                generation.mutate( 0.3 )
-                
-                configuration_list = InputReader.generationToConfigurations( generation )
-
-		#grid scan
-        else:
-            grid_scan_configuration = GridScanInputReader( configuration_file )
-            configuration_list = [ config for config in grid_scan_configuration ]
-
-            number_of_models = len( grid_scan_configuration )
-
-            
-        #MAKE THIS MORE ROBUST BY CHECKING THE NUMBER OF RUNNING JOBS FOR THE USER
-        if number_of_models > max_number_of_trainings : 
-            print( 'Error : requesting to train {} models. The cluster only allows {} jobs to be submitted.'.format( number_of_models, max_number_of_trainings ) )
-            print( 'Please modify the configuration file to train less models.')
-            sys.exit()
-
-        for configuration in configuration_list:
-            submitTrainingJob( configuration, output_directory_name )
-
-        print( '########################################################' )
-        print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
-        print( '########################################################' )
+        submitTrainingJobs( configuration_file_name )
