@@ -36,24 +36,24 @@ class DataCollection:
         total_dataset.shuffle()
 
         #split training/validation and test sets
-        max_index_training = int( num_samples*( 1 - validation_fraction - test_fraction ) )
-        max_index_validation = int( num_samples*( 1 - test_fraction ) )
+        max_index_training = int( number_of_samples*( 1 - validation_fraction - test_fraction ) )
+        max_index_validation = int( number_of_samples*( 1 - test_fraction ) )
         
-        self.__training_data = total_dataset[:max_index_training]
-        self.__validation_data = total_dataset[max_index_training:max_index_validation]
-        self.__test_data = total_dataset[max_index_validation:]
+        self.__training_set = total_dataset[:max_index_training]
+        self.__validation_set = total_dataset[max_index_training:max_index_validation]
+        self.__test_set = total_dataset[max_index_validation:]
         
 
     @property
-    def training_data( self ):
-        return self.__training_data
+    def training_set( self ):
+        return self.__training_set
 
     
     @property
-    def validation_data( self ):
-        return self.__validation_data
+    def validation_set( self ):
+        return self.__validation_set
 
     
     @property
-    def test_data( self ):
-        return self.__test_data
+    def test_set( self ):
+        return self.__test_set
