@@ -4,16 +4,25 @@ from keras import optimizers
 from keras import callbacks
 from keras import backend as K
 import h5py
+import tensorflow as tf
 
+#import other parts of framework
 from treeToArray import *
 from diagnosticPlotting import *
 
 
-def tensorFlowSetNumThreads( num_threads ):
-    K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads = num_threads, inter_op_parallelism_threads = num_threads ) ) )
+def tensorFlowSetNumThreads( number_of_threads ):
+    K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads = number_of_threads, inter_op_parallelism_threads = number_of_threads ) ) )
 
 
-def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, model_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, num_threads = 1):
+#function to use auc as a keras metric 
+def auc( true_labels, predictions, weights = None ):
+    auc = tf.metrics.auc( true_labels,  predictions, weights = weights)[1]
+    K.get_session().run( tf.local_variables_initializer() )
+    return auc
+
+
+def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, model_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, number_of_threads = 1):
 
     model = models.Sequential()
 
@@ -39,7 +48,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     model.compile(
         optimizer = optimizer,
         loss = 'binary_crossentropy',
-        metrics = ['accuracy',]
+        metrics = ['accuracy']
     )
 
     #cut off training at convergence and save model with best validation
@@ -56,7 +65,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     ]
 
     #set number of threads to use in training        
-    tensorFlowSetNumThreads( num_threads ) 
+    tensorFlowSetNumThreads( number_of_threads ) 
 
     #train model
     training_history = model.fit(
@@ -79,6 +88,5 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     plotAccuracyComparison( training_history, model_name )
     plotLossComparison( training_history, model_name )
 
-
-if __name__ == '__main__':
-    pass
+    #to avoid random tensorflow crashes
+    K.clear_session()
