@@ -117,7 +117,7 @@ def submitTrainingJobs( configuration_file_name ):
         #no previous generation has been trained yet, make a random population as the first generation
         if last_generation_number == 0:
             first_generation = genetic_algo_configuration.randomGeneration()
-            configuration_list = InputReader.generationToConfigurations( first_generation )
+            configuration_list = generationToConfigurations( first_generation )
     
         #apply genetic algorithm to make the next generation
         else:
@@ -137,7 +137,7 @@ def submitTrainingJobs( configuration_file_name ):
             generation = generation.newGeneration( fitness_func )
             generation.mutate( 0.3 )
     
-            configuration_list = InputReader.generationToConfigurations( generation )
+            configuration_list = generationToConfigurations( generation )
     
     #grid scan
     else:
