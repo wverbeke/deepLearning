@@ -22,3 +22,10 @@ class DenseNeuralNetworkConfiguration( Configuration ):
 
         if not( self._parameters['dropout_all'] or self._parameters['dropout_first'] ):
             self._parameters['dropout_rate'] = 0
+
+
+
+@registerConfiguration
+class GradientBoostedForestConfiguration( Configuration ):
+    _required_parameters = { 'number_of_trees', 'learning_rate', 'max_depth', 'min_child_weight', 'subsample', 'colsample_bytree', 'gamma', 'alpha' }
+

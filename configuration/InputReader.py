@@ -7,9 +7,6 @@ import itertools
 import os
 main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 sys.path.insert(0, main_directory )
-
-#sys.path.insert(0, '../')
-#sys.path.insert(0, '../geneticAlgorithm')
 from geneticAlgorithm.Trait import IntTraitClassFactory, FloatTraitClassFactory, StringTraitClassFactory, BoolTrait
 from geneticAlgorithm.Genome import Genome
 from geneticAlgorithm.Generation import Generation
@@ -19,7 +16,7 @@ from configuration.Configuration import newConfigurationFromDict, Configuration
 
 #class that reads the metadata specifying the test, training and validation data sets
 class TrainingDataReader( Configuration ):
-    _required_parameters = [ 'root_file_name', 'signal_tree_name', 'background_tree_name', 'list_of_branches', 'weight_branch', 'only_positive_weights', 'validation_fraction', 'test_fraction' ]
+    _required_parameters = [ 'root_file_name', 'signal_tree_name', 'background_tree_name', 'list_of_branches', 'weight_branch', 'only_positive_weights', 'validation_fraction', 'test_fraction', 'number_of_threads' ]
 
     def __init__( self, configuration_file ):
         self._parameters = {}
@@ -29,11 +26,6 @@ class TrainingDataReader( Configuration ):
         
         #check whether all necessary keys are present 
         self._allParametersPresent()
-
-
-    #overload of abstract function that is not used in this case
-    def _removeRedundancies( self ):
-        pass
 
 
 

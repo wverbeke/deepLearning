@@ -27,7 +27,7 @@ def trainAndEvaluateModel( training_configuration, model_configuration ):
 
 
 
-def submitTrainingJob( configuration, output_directory ):
+def submitTrainingJob( configuration, number_of_threads, output_directory ):
     
     #model name 
     model_name = configuration.name() 
@@ -51,7 +51,7 @@ def submitTrainingJob( configuration, output_directory ):
     
     print( command_string )
     #submit this process 
-    #submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = 1 )
+    #submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads )
 
 
 #convert string to either float, integer or boolean, or keep it as a string
@@ -154,7 +154,7 @@ def submitTrainingJobs( configuration_file_name ):
     
     job_id_list = []
     for configuration in configuration_list:
-        job_id = submitTrainingJob( configuration, output_directory_name )
+        job_id = submitTrainingJob( configuration, configuration_file.number_of_threads, output_directory_name )
         job_id_list.append( job_id )
     
     if isGeneticAlgorithmInput( configuration_file ):

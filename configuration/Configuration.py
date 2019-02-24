@@ -30,9 +30,9 @@ class Configuration( abc.ABC ):
         self._parameters = OrderedDict( sorted( self._parameters.items(), key = operator.itemgetter(0) ) )
 
  
-    @abc.abstractmethod 
     def _removeRedundancies( self ):
         '''Function that sets configurations that are equivalent to a default representation so the multiple trainings with the same configuration can be avoided.'''
+        pass 
    
  
     def _allParametersPresent( self ):
