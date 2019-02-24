@@ -4,6 +4,7 @@ Functions for submitting jobs to a cluster
 
 import os
 import time
+import subprocess
 
 #import other parts of framework
 import sys
@@ -42,15 +43,20 @@ def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_t
     #submit job
     #EXPAND THIS PART TO WORK FOR DIFFERENT JOB SUBMISSION SYSTEMS
     #IF POSSIBLE AUTOMATICALLY DETECT THE SUBMISSION SYSTEM
-    submitQSubJob( script_name, wall_time, num_threads )
+    return submitQSubJob( script_name, wall_time, num_threads )
 
+
+def runningJobs():
+    #EXPAND THIS PART TO WORK FOR DIFFERENT JOB SUBMISSION SYSTEMS
+    #IF POSSIBLE AUTOMATICALLY DETECT THE SUBMISSION SYSTEM
+    return runningQsubJobs()
 
 
 def testShellCommand( command_string ):
 
     #attempt to run command
     try: 
-        subprocess.check_output(command_string , shell=True , stderr=subprocess.STDOUT)
+        subprocess.check_output( command_string , shell=True , stderr=subprocess.STDOUT )
         return True
 
     # command does not exist 
@@ -85,5 +91,13 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1):
         if not error_found :
             first_line = output.split('\n')[0]
             print( first_line )
-            break
+            
+            #break loop by returning job id when submission was successful 
+            return first_line
         time.sleep(1)
+
+
+#check running qsub jobs 
+def runningQsubJobs():
+    qstat_output = subprocess.check_output( 'qstat -u$USER', shell=True, stderr=subprocess.STDOUT )
+    return ( output_line.split('.')[0] for output_line in qstat_output.split('\n') )
