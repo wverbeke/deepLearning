@@ -10,7 +10,8 @@ import subprocess
 import sys
 main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) ) 
 sys.path.insert( 0, main_directory )
-from jobSubmission.CMSSW import getCMSSWDirectory
+#from jobSubmission.CMSSW import getCMSSWDirectory
+from CMSSW import getCMSSWDirectory # MYSTERY: why does this line work and not the above in python 2?
 
 
 def newJobScript( script_name ):
