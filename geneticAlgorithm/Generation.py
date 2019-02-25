@@ -108,7 +108,7 @@ class Generation:
     #probability for reproduction, depending on the ranking as a function of fitness 
     #these probabilities are only correct for a ranked population
     def _reproductionProbabilities( self, number_of_survivors  ):
-        reproduction_probabilities = ( number_of_survivors - np.arange( number_of_survivors ) ) / np.sum( np.arange( 1, number_of_survivors + 1) )
+        reproduction_probabilities = ( number_of_survivors - np.arange( number_of_survivors, dtype = float) ) / np.sum( np.arange( 1, number_of_survivors + 1) )
         return reproduction_probabilities 
 
 
