@@ -31,9 +31,11 @@ test_fraction = 0.2
 #use genetic algorithm or grid-scan for optimization
 use_genetic_algorithm = False
 
+number_of_threads = 1
+
 if use_genetic_algorithm:
 
-    population_size = 500
+    population_size = 200
 
     #ranges of neural network parameters for the genetic algorithm to scan
     parameter_ranges = {
@@ -44,7 +46,11 @@ if use_genetic_algorithm:
         'learning_rate_decay' : (0.9, 1),
         'dropout_first' : (False, True),
         'dropout_all' : (False, True), 
-        'dropout_rate' : (0, 0.5)
+        'dropout_rate' : (0, 0.5),
+
+        #advice not to change these parameters
+        'number_of_epochs' : [20], 
+        'batch_size' : list( range( 32, 256 ) )
     }
 
 else:
@@ -56,5 +62,9 @@ else:
         'learning_rate_decay' : [1, 0.99, 0.95],
         'dropout_first' : [False, True],
         'dropout_all' : [False, True],
-        'dropout_rate' : [0.5, 0.3]
+        'dropout_rate' : [0.5, 0.3],
+
+        #advice not to change these parameters
+        'number_of_epochs' : [5],
+        'batch_size' : [128]
     }

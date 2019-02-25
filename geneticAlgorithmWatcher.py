@@ -13,7 +13,7 @@ from runTraining import submitTrainingJobs
 class GeneticAlgorithmWatcher :
 
     def __init__( self, configuration_file_name, job_id_list ):
-        self.configuration_file =  __import__( configuration_file_name.replace('.py', '') )
+        self.configuration_file_name = configuration_file_name
         self.job_id_set = set( job_id_list )
 
     
@@ -25,7 +25,7 @@ class GeneticAlgorithmWatcher :
 
     
     def submitNextGeneration( self ):
-        submitTrainingJobs( self.configuration_file )
+        submitTrainingJobs( self.configuration_file_name )
 
 
 
@@ -45,4 +45,4 @@ if __name__ == '__main__' :
                 watcher.submitNextGeneration()
                 break
             else:
-                sleep( 900 )    
+                time.sleep( 200 )    

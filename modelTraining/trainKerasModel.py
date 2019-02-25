@@ -22,7 +22,7 @@ def auc( true_labels, predictions, weights = None ):
     return auc
 
 
-def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, model_name = 'model', num_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, number_of_threads = 1):
+def trainDenseClassificationModel(train_data, train_labels, validation_data, validatation_labels, train_weights = None, validation_weights = None, model_name = 'model', number_of_hidden_layers = 5, units_per_layer = 256, activation = 'relu', optimizer = optimizers.RMSprop(), dropout_first=True, dropout_all=False, dropout_rate = 0.5, num_epochs = 20, batch_size = 128, number_of_threads = 1):
 
     model = models.Sequential()
 
@@ -33,7 +33,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     model.add( layers.BatchNormalization( input_shape = input_shape ) )
     
     #add hidden densely connected layers 
-    for x in range(num_hidden_layers) :
+    for x in range(number_of_hidden_layers) :
         model.add( layers.Dense( units_per_layer, activation = activation ) )
         if (dropout_first and x == 0) or dropout_all:
             model.add( layers.Dropout( dropout_rate ) )
@@ -73,7 +73,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
         train_labels,
         sample_weight = (None if train_weights.size == 0 else train_weights),
         epochs = num_epochs,
-        batch_size = 128,
+        batch_size = batch_size,
         validation_data = (validation_data, validatation_labels, (None if validation_weights.size == 0 else validation_weights) ),
         callbacks = callbacks_list,
         verbose = 2
