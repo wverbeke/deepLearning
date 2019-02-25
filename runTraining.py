@@ -171,7 +171,7 @@ def submitTrainingJobs( configuration_file_name ):
             watcher_command += ' {}'.format( job ) 
         
         #run the watcher script in the background
-        subprocess.Popen( [ wathcer_command + ' &'], shell = True )
+        subprocess.Popen( [ watcher_command + ' &'], shell = True )
 
     print( '########################################################' )
     print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
