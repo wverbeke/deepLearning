@@ -49,7 +49,7 @@ def rocAndAUC( signal_dataset, background_dataset, model_name ):
 	    signal_dataset.weights,
 	    background_dataset.outputs,
 	    background_dataset.weights,
-	    num_points = 1000
+	    num_points = 10000
 	)
 	plotROC( eff_signal, eff_background, model_name )
 	auc = areaUnderCurve(eff_signal, eff_background )
@@ -109,6 +109,7 @@ class ModelTrainingSetup:
         )
     
         self.__number_of_threads = training_data_configuration['number_of_threads']
+        self.__feature_names = training_data_configuration['list_of_branches']
 
 
     #make shuffled training and validation sets 
@@ -161,7 +162,7 @@ class ModelTrainingSetup:
             dropout_first = configuration['dropout_first'],
             dropout_all = configuration['dropout_all'],
             dropout_rate = configuration['dropout_rate'],
-            num_epochs = 5, 
+            num_epochs = 1, 
             number_of_threads = self.__number_of_threads
         )
 
@@ -183,8 +184,8 @@ class ModelTrainingSetup:
         training_data, validation_data = self.trainingAndValidationSets()
     
         trainGradientBoostedForestClassificationModel(
-            training_data.samples, training_data.labels, validation_data.samples, validation_data.labels,
-            train_weights = training_data.weights, validation_weights = validation_data.weights,
+            training_data.samples, training_data.labels, train_weights = training_data.weights, 
+            feature_names = self.__feature_names,
             model_name = configuration.name(),
             number_of_trees = configuration['number_of_trees'],
             learning_rate = configuration['learning_rate'],
