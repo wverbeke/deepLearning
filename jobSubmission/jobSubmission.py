@@ -22,7 +22,7 @@ def newJobScript( script_name ):
     script.write('eval `scram runtime -sh`\n')
 
     #inside the job switch back to directory where program was executed 
-    current_directory = os.path.dirname( os.path.abspath( __file__ ) )
+    current_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
     script.write('cd ' + current_directory + '\n')
 
     #return the script
@@ -43,7 +43,7 @@ def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_t
     #submit job
     #EXPAND THIS PART TO WORK FOR DIFFERENT JOB SUBMISSION SYSTEMS
     #IF POSSIBLE AUTOMATICALLY DETECT THE SUBMISSION SYSTEM
-    return submitQSubJob( script_name, wall_time, num_threads )
+    return submitQsubJob( script_name, wall_time, num_threads )
 
 
 def runningJobs():
@@ -93,11 +93,18 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1):
             print( first_line )
             
             #break loop by returning job id when submission was successful 
-            return first_line
+            return first_line.split('.')[0]
         time.sleep(1)
 
 
 #check running qsub jobs 
 def runningQsubJobs():
-    qstat_output = subprocess.check_output( 'qstat -u$USER', shell=True, stderr=subprocess.STDOUT )
+
+    #keep catching qsub errors untill command succeeds 
+    while True:
+        try:
+            qstat_output = subprocess.check_output( 'qstat -u$USER', shell=True, stderr=subprocess.STDOUT )
+            break
+        except subprocess.CalledProcessError:
+            pass
     return ( output_line.split('.')[0] for output_line in qstat_output.split('\n') )

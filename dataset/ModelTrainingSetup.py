@@ -155,14 +155,15 @@ class ModelTrainingSetup:
             training_data.samples, training_data.labels, validation_data.samples, validation_data.labels, 
             train_weights = training_data.weights, validation_weights = validation_data.weights, 
             model_name = configuration.name(), 
-            num_hidden_layers = configuration['num_hidden_layers'],
+            number_of_hidden_layers = configuration['number_of_hidden_layers'],
             units_per_layer = configuration['units_per_layer'],
             activation = 'relu', 
             optimizer = keras_optimizer,
             dropout_first = configuration['dropout_first'],
             dropout_all = configuration['dropout_all'],
             dropout_rate = configuration['dropout_rate'],
-            num_epochs = 1, 
+            num_epochs = configuration['number_of_epochs'], 
+            batch_size = configuration['batch_size'],
             number_of_threads = self.__number_of_threads
         )
 
