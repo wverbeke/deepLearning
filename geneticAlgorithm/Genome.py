@@ -46,13 +46,14 @@ class Genome:
 
 
     #mutate a random Trait in the Genome
-    def mutate( self ):
+    def mutate( self, number_of_mutations = 1):
 
         #randomnly choose trait to mutate 
-        mutation_key = np.random.choice( list(self._trait_dict.keys()) )
+        mutation_keys = np.random.choice( list(self._trait_dict.keys() ), size = number_of_mutations )
         
         #mutate trait
-        self._trait_dict[mutation_key].mutate()
+        for mutated_trait in mutation_keys:
+            self._trait_dict[mutated_trait].mutate()
     
 
     #reproduce with an other Genome, creating two new Genomes 
@@ -75,7 +76,12 @@ class Genome:
     #compute the fitness of this Genome depending on some provided function to determine the Fitness  
     def fitness( self, fitness_func ):
         return fitness_func( self )
-        
+
+
+    def newRandomGenome( self ):
+        ret = Genome( self._trait_dict )
+        ret.randomize()
+        return ret 
 
 
 if __name__ == '__main__':

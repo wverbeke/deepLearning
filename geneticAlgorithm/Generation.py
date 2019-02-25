@@ -28,7 +28,7 @@ class Generation:
         return len( self._population )
 
 
-    def mutate( self, probability ):
+    def mutate( self, probability, number_of_mutations_per_genome = 1):
         
         #select genomes to mutate 
         mutation_decisions = np.random.choice( np.arange(2), size = len( self._population ), p = [ ( 1 - probability ), probability ] )
@@ -36,10 +36,10 @@ class Generation:
         #mutate the chosen genomes 
         for choice, genome in zip( mutation_decisions , self._population ):
             if choice :
-                genome.mutate() 
+                genome.mutate( number_of_mutations_per_genome ) 
             
 
-    def newGeneration( self, fitness_func ):
+    def newGeneration( self, fitness_func, target_size = None):
         
         #order population by decreasing fitness 
         self._population.sort( key = lambda genome : genome.fitness( fitness_func ), reverse = True )
@@ -74,6 +74,19 @@ class Generation:
         new_genome_generator = ( self._population[ reproduction_indices[i] ].reproduce( self._population[ reproduction_indices[i + 1] ] ) for i in range(0, number_born, 2) )
         new_genomes = list( itertools.chain( *new_genome_generator ) )
 
+        #if the target size is larger than the current population add more genomes 
+        if target_size is not None:
+            population_gap = ( target_size - len( self ) )
+            if population_gap > 0:
+                
+                #first try patching with individuals that were not supposed to survive 
+                new_genomes += self._population[ number_of_survivors : number_of_survivors + min( population_gap, number_born ) ]
+
+                #if this is not enough, add random genomes 
+                if population_gap > number_born:
+                    new_genomes += [ self.newRandomGenome() for i in range( population_gap - number_born ) ]
+
+
         #new generation is the combination of survivors and new genomes
         return Generation( survivors + new_genomes )
         
@@ -84,11 +97,20 @@ class Generation:
             genome.randomize() 
 
 
+    #get random genome 
+    def newRandomGenome( self ):
+        try:
+            return self._population[0].newRandomGenome()
+        except IndexError:
+            return None 
+
+
     #probability for reproduction, depending on the ranking as a function of fitness 
     #these probabilities are only correct for a ranked population
     def _reproductionProbabilities( self, number_of_survivors  ):
         reproduction_probabilities = ( number_of_survivors - np.arange( number_of_survivors ) ) / np.sum( np.arange( 1, number_of_survivors + 1) )
         return reproduction_probabilities 
+
 
 
 
@@ -111,7 +133,7 @@ if __name__ == '__main__' :
     for i in range(100):
         print( len( generation._population ) )
         generation = generation.newGeneration( fitness_func )
-        generation.mutate( 0.2 )
+        generation.mutate( 0.2, 2 )
 
     for genome in generation : 
         print( genome )

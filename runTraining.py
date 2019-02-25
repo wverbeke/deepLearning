@@ -38,20 +38,24 @@ def submitTrainingJob( configuration, number_of_threads, output_directory ):
     #make the command to run, starting with switching to the output directory
     command_string = 'cd {}/{}\n'.format( output_directory, model_name )
     
-    #add the training to the command
+    #add the training to the command and make sure to refer to the correct directory for the runTraining file
     configuration_file_name = sys.argv[1]
-    command_string += 'python runTraining.py {}'.format( configuration_file_name ) 
+    main_directory = os.path.dirname( os.path.abspath( __file__ ) )
+    command_string += 'python {}/runTraining.py {}'.format( main_directory, configuration_file_name ) 
     for name, value in configuration:
         command_string += ' {}={}'.format( name, value )
     
     #pipe output to text files 
-    log_file = model_name + '_log.txt'
+    log_file = 'trainingOutput_' + model_name + '.txt'
     error_file = model_name + '_err.txt'
     command_string += ' > {} 2>{} '.format( log_file, error_file)
+
+    #dump configuration to output directory 
+    configuration.toJSON( os.path.join( output_directory, model_name, 'configuration_' + model_name + '.json' ) )
     
-    print( command_string )
+    #print( command_string )
     #submit this process 
-    #submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads )
+    return submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads )
 
 
 #convert string to either float, integer or boolean, or keep it as a string
@@ -104,11 +108,9 @@ def submitTrainingJobs( configuration_file_name ):
     
     #determine whether to run a genetic algorithm or a grid scan 
     if isGeneticAlgorithmInput( configuration_file ) :
-        print( 'isGeneticAlgo' )
     
         last_generation_number =  lastGenerationNumber( output_directory_name )
-        generation_subdirectory = 'generation_{}'.format( last_generation_number + 1 )
-        output_directory_name = output_directory_name + '/' + generation_subdirectory
+        new_generation_subdirectory = 'generation_{}'.format( last_generation_number + 1 )
     
         #set up genetic algorithm
         genetic_algo_configuration = GeneticAlgorithmInputReader( configuration_file )
@@ -125,20 +127,25 @@ def submitTrainingJobs( configuration_file_name ):
             #read output of previous generation 
             last_generation_subdirectory = 'generation_{}'.format( last_generation_number )
             output_last_generation = output_directory_name + '/' + last_generation_subdirectory
-            output_parser = OutputParser( output_directory_name )
+            output_parser = OutputParser( output_last_generation )
     
-            #convert the output to a generation and evolve it 
+            #convert the output to a generation 
             #the fitness of a model is its AUC
             def fitness_func( genome ):
-                config = genomeToNeuralNetworkConfiguration( genome )
+                config = genomeToConfiguration( genome )
                 return output_parser.getAUC( config )
     
             generation = output_parser.toGeneration( genetic_algo_configuration )
-            generation = generation.newGeneration( fitness_func )
-            generation.mutate( 0.3 )
+
+            #evolve and mutate the generation
+            generation = generation.newGeneration( fitness_func, target_size = configuration_file.population_size )
+            generation.mutate( 0.2, 2 )
     
             configuration_list = generationToConfigurations( generation )
     
+        #output directory name for next generation
+        output_directory_name = output_directory_name + '/' + new_generation_subdirectory
+
     #grid scan
     else:
         grid_scan_configuration = GridScanInputReader( configuration_file )
@@ -151,7 +158,7 @@ def submitTrainingJobs( configuration_file_name ):
         print( 'Error : requesting to train {} models. The cluster only allows {} jobs to be submitted.'.format( number_of_models, max_number_of_trainings ) )
         print( 'Please modify the configuration file to train less models.')
         sys.exit()
-    
+ 
     job_id_list = []
     for configuration in configuration_list:
         job_id = submitTrainingJob( configuration, configuration_file.number_of_threads, output_directory_name )
@@ -164,7 +171,7 @@ def submitTrainingJobs( configuration_file_name ):
             watcher_command += ' {}'.format( job ) 
         
         #run the watcher script in the background
-        subprocess.Popen( [ wathcer_command ] )
+        subprocess.Popen( [ wathcer_command + ' &'], shell = True )
 
     print( '########################################################' )
     print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
