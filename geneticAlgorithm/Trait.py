@@ -3,7 +3,7 @@ import numpy as np
 
 #Abstract base class representing a single Trait of a genome to be used in genetic algorithms
 #Note in python 2 this can not be defined as an ABC, but all methods having a simple 'pass' as body have to be overloaded!
-class Trait : 
+class Trait (object): 
 
     def __init__( self, value ):
         self._value = value
@@ -141,7 +141,7 @@ def StringTraitClassFactory( possibleValues ):
         def __init__( self, value ):
 
             #call base version of initializer
-            super().__init__( value )
+            super( StringTrait, self ).__init__( value )
 
             #store integer index representing the string 
             self._index = self.nameToIndex[ self._value ]
