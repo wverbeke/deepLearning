@@ -7,48 +7,51 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plotComparison( training_history, model_name, metric ):
+def plotKerasMetricComparison( training_history, model_name, metric, metric_label ):
 
     #extract history of the metric 
     training_metric = training_history.history[metric]
     validation_metric = training_history.history['val_' + metric]
 
     #plot metric as a function of the training epoch
-    epochs = range(1, len(training_metric) + 1 )
-    plt.plot(epochs, training_metric, 'b', label = 'training ' + metric, lw=2) # this name can be improved 
-    plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric, lw=2) #this name can be improved 
-    plt.legend(loc='best')
-    plt.xlabel('Epoch')
-    plt.ylabel(metric) #this name can be improved 
-    plt.grid(True)
-    plt.savefig( metric + '_' + model_name + '.pdf')
+    epochs = range( 1, len(training_metric) + 1 )
+    plt.plot(epochs, training_metric, 'b', label = 'training ' + metric_label.lower(), lw = 2 )
+    plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric_label.lower(), lw = 2 )
+    plt.legend( loc = 'best' )
+    plt.xlabel( 'Epoch', fontsize = 22 )
+    plt.ylabel( metric_label, fontsize = 22 )
+    plt.ticklabel_format( style='sci', axis = 'y', scilimits = ( -2, 2 ) )
+    plt.grid( True )
+    plt.savefig( metric + '_' + model_name + '.pdf' )
     
     #clear canvas
     plt.clf()
     
 
 def plotAccuracyComparison( training_history, model_name ):
-    return plotComparison(training_history, model_name, 'acc')
+    return plotKerasMetricComparison(training_history, model_name, 'acc', 'Accuracy')
 
 
 def plotLossComparison( training_history, model_name ):
-    return plotComparison(training_history, model_name, 'loss')
+    return plotKerasMetricComparison(training_history, model_name, 'loss', 'Loss')
 
 
 def computeEfficiency( outputs, weights, min_output, max_output, num_points ):
-    
+    cuts = min_output + np.arange(1, num_points + 1, dtype=float)/num_points*(  max_output - min_output )
+
     #reshape outputs to be one dimensional
     outputs = outputs.reshape( len(outputs) )
+    denominator = np.sum( weights )
 
-    #make array of possible cuts by dividing the interval in equally spaced cuts 
-    output_range = max_output - min_output
-    cuts = min_output + np.arange(1, num_points + 1, dtype=float)/num_points*output_range
-    cuts = cuts.reshape( (num_points, 1) )
+    #efficiency generator 
+    efficiencies = ( np.sum( np.where( outputs > cuts[i], weights, 0 ) )/denominator for i in range( num_points ) )
 
-    #sum weights for outputs that passed the cut using broadcasting
-    efficiency = np.sum( np.where( outputs > cuts, weights, 0 ), axis = 1 )/np.sum(weights)
-    return efficiency
-
+    #initialize array from generator 
+    efficiency_array = np.empty( num_points, dtype=float )
+    for i, efficiency in enumerate( efficiencies ):
+        efficiency_array[i] = efficiency
+    return efficiency_array
+        
 
 def computeROC( outputs_signal, weights_signal, outputs_background, weights_background, num_points = 1000 ):
 
@@ -77,8 +80,8 @@ def plotROC(sig_eff, bkg_eff, model_name):
     
     #plot background rejection as a function of signal efficiency
     plt.plot( sig_eff, backgroundRejection(bkg_eff) , 'b', lw=2)
-    plt.xlabel('Signal efficiency')
-    plt.ylabel('Background rejection')
+    plt.xlabel( 'Signal efficiency', fontsize = 22 )
+    plt.ylabel( 'Background rejection', fontsize = 22 )
     plt.grid(True)
     plt.savefig('roc_' + model_name + '.pdf') 
 
@@ -111,8 +114,8 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
     addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
 
-    plt.xlabel('Model output')
-    plt.ylabel('Normalized number of events')
+    plt.xlabel( 'Model output', fontsize = 22 )
+    plt.ylabel( 'Normalized events', fontsize = 22 )
     plt.legend(ncol=2, prop={'size': 13})
 
     bottom, top = plt.ylim()
@@ -120,17 +123,6 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     plt.savefig('shapeComparison_' + model_name + '.pdf')
     plt.clf()
     
-
-def testOutputPlot( outputs_sig, weights_sig, outputs_bkg, weights_bkg):
-    min_output = min( np.min( outputs_sig ), np.min( outputs_bkg ) )
-    max_output = max( np.max( outputs_sig ), np.max( outputs_bkg ) )
-    addHist( outputs_sig, weights_sig, 30, min_output, max_output, color = 'blue')
-    addHist( outputs_bkg, weights_bkg, 30, min_output, max_output, color = 'red')
-    bottom, top = plt.ylim()
-    plt.ylim( 0,  top)
-    plt.savefig('test_hist.pdf')
-    plt.clf()
-
 
 def binWidth(num_bins, min_bin, max_bin):
     return float( max_bin - min_bin) / num_bins
