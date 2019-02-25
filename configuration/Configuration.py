@@ -7,7 +7,8 @@ from collections import OrderedDict
 
 
 #abstract base class representing the configuration of a machine learning algorithm
-class Configuration( abc.ABC ):
+#note that in python 2 this can not be defined as ABC, but this class should not be used out of the box!
+class Configuration :
     
     _required_parameters = set()
     def __init__( self, **input_configuration ):

@@ -81,7 +81,7 @@ class ModelTrainingSetup:
         #make sure input file exists 
         root_file_name = os.path.join( main_directory , training_data_configuration['root_file_name'] )
         if not os.path.isfile( root_file_name ):
-            raise FileNotFoundError('input file does not exist. Give a valid ROOT file!') 
+            raise OSError('input file does not exist. Give a valid ROOT file!') 
 
         #get trees from file
         root_file = TFile( root_file_name )

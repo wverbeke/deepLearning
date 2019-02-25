@@ -1,9 +1,9 @@
 import numpy as np
-import abc 
 
 
 #Abstract base class representing a single Trait of a genome to be used in genetic algorithms
-class Trait( abc.ABC ): 
+#Note in python 2 this can not be defined as an ABC, but all methods having a simple 'pass' as body have to be overloaded!
+class Trait : 
 
     def __init__( self, value ):
         self._value = value
@@ -19,26 +19,27 @@ class Trait( abc.ABC ):
         return self.__str__()
 
     
-    @abc.abstractmethod
     def newTraits( self, other):
         """Make two new traits by mixing two traits."""
+        pass
 
 
-    @abc.abstractmethod 
     def mutate( self ):
         """Mutate the trait."""
+        pass
 
 
-    @abc.abstractmethod 
     def _checkValue( self ):
         """Returns boolean checking whether the current value is acceptable."""
+        pass
 
 
     @classmethod
-    @abc.abstractmethod
     def randomTrait( cls ):
         """return a random trait"""
+        pass
     
+
     # return numeric representation of self._value
     # in most cases this will be the same as self._value, but it might be different when self._value is a string or other non-numeric object
     def _numericValue( self ):
@@ -67,7 +68,7 @@ def IntTraitClassFactory( possibleValues ):
 
         def newTraits( self, other ):
             new_val_1, new_val_2 = self._newParameters( other )
-            return IntTrait( round(new_val_1) ), IntTrait( round(new_val_2) )
+            return IntTrait( int( round(new_val_1) ) ), IntTrait( int( round(new_val_2) ) )
 
 
         def mutate( self ):
@@ -152,7 +153,7 @@ def StringTraitClassFactory( possibleValues ):
 
         def newTraits( self, other ) :
             new_val_1, new_val_2 = self._newParameters( other )
-            new_name_1, new_name_2 = self.indexToName[ round(new_val_1) ], self.indexToName[ round(new_val_2) ]
+            new_name_1, new_name_2 = self.indexToName[ int( round(new_val_1) ) ], self.indexToName[ int( round(new_val_2) ) ]
             return StringTrait( new_name_1 ), StringTrait( new_name_2 )
 
 

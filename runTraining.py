@@ -85,7 +85,7 @@ def lastGenerationNumber( output_directory_name ):
         return max( generation_numbers )
     
     #training the first generation
-    except FileNotFoundError:
+    except OSError:
         os.system('mkdir {}'.format( output_directory_name ) )
         return 0
     except ValueError:
