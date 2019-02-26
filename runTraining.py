@@ -165,7 +165,7 @@ def submitTrainingJobs( configuration_file_name ):
         job_id_list.append( job_id )
     
     if isGeneticAlgorithmInput( configuration_file ):
-        watcher_command = 'python geneticAlgorithmWatcher.py '
+        watcher_command = 'nohup python geneticAlgorithmWatcher.py '
         watcher_command += configuration_file_name 
         for job in job_id_list:
             watcher_command += ' {}'.format( job ) 
