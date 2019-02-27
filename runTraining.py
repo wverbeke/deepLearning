@@ -53,7 +53,6 @@ def submitTrainingJob( configuration, number_of_threads, output_directory ):
     #dump configuration to output directory 
     configuration.toJSON( os.path.join( output_directory, model_name, 'configuration_' + model_name + '.json' ) )
     
-    #print( command_string )
     #submit this process 
     return submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads )
 
@@ -169,9 +168,12 @@ def submitTrainingJobs( configuration_file_name ):
         watcher_command += configuration_file_name 
         for job in job_id_list:
             watcher_command += ' {}'.format( job ) 
+
+        #piper output of watcher script to log file for debugging 
+        watcher_output_file = 'watcher_generation{}_log.txt'.format( last_generation_number ) 
         
         #run the watcher script in the background
-        subprocess.Popen( [ watcher_command + ' &'], shell = True )
+        subprocess.Popen( [ watcher_command + ' > {} 2>> {} &'.format( watcher_output_file ) ], shell = True )
 
     print( '########################################################' )
     print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
