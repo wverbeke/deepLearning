@@ -79,7 +79,7 @@ class GeneticAlgorithmInputReader:
     def dictionaryToGenome( self, value_dict):
 
         #check if the appropriate keys are present 
-        if value_dict.keys() != self._trait_classes.keys():
+        if set( value_dict.keys() ) != set( self._trait_classes.keys() ):
             raise KeyError('configuration file parameters and keys of passed dictionary are different')
 
         trait_dict = { name : self._trait_classes[name](value) for name, value in value_dict.items() }
