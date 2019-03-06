@@ -125,6 +125,10 @@ class Configuration( abc.ABC ):
 
     def __getitem__( self, key ):
         return self._parameters[key] 
+
+    
+    def keys( self ):
+        return self._parameters.keys()
         
 
 #list of all possible configuration classes, this will be used to determine from the input which learning algorithm should be used 
