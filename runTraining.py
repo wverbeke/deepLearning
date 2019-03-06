@@ -182,7 +182,7 @@ def submitTrainingJobs( configuration_file_name ):
         watcher_output_file = 'watcher_generation{}_log.txt'.format( last_generation_number ) 
         
         #run the watcher script in the background
-        subprocess.Popen( [ watcher_command + ' > {} 2>> {} &'.format( watcher_output_file ) ], shell = True )
+        subprocess.Popen( [ watcher_command + ' > {0} 2>> {0} &'.format( watcher_output_file ) ], shell = True )
 
     print( '########################################################' )
     print( 'Submitted {} neural networks for training.'.format( number_of_models ) )
