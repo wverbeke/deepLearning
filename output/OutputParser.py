@@ -9,6 +9,7 @@ main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.insert( 0, main_directory )
 from miscTools.stringTools import canConvertToFloat
 from configuration.Configuration import *
+from configuration.LearningAlgorithms import *
 from configuration.InputReader import *
 
 
@@ -57,7 +58,7 @@ class OutputParser:
 
 
     def rankModels(self):
-        self.AUC_map = OrderedDict( sorted( self._AUC_map.items(), key = operator.itemgetter(1), reverse=True ) )
+        self._AUC_map = OrderedDict( sorted( self._AUC_map.items(), key = operator.itemgetter(1), reverse=True ) )
 
 
     def printBestModels(self):
@@ -71,7 +72,10 @@ class OutputParser:
 
     
     def analysisName(self):
-        return self._output_directory_name.replace('output_', '')
+        analysis_name = self._output_directory_name.replace('output_', '')
+        if analysis_name.endswith('/'):
+            analysis_name = analysis_name[:-1]
+        return analysis_name
 
     
     def copyBestModelsOutput(self):
@@ -97,15 +101,6 @@ class OutputParser:
     def getAUC( self, config ):
         return self._AUC_map[config]
 
-        
 
-if __name__ == '__main__' :
-    
-    if len( sys.argv ) == 2 :
-        output_directory = sys.argv[1]
-        ranker = OutputParser( output_directory )
-        ranker.bestModels()
-    else :
-        print( 'Error: incorrect number of arguments given to script.')
-        print( 'Usage: <python OutputParser.py output_directory>')
-     
+    def configurations( self ):
+        return self._AUC_map.keys()

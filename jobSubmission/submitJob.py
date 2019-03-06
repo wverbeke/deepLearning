@@ -29,7 +29,7 @@ def newJobScript( script_name ):
     return script
 
 
-def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_threads = 1):
+def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_threads = 1, high_memory = False):
     
     #make script
     script = newJobScript( script_name )
@@ -43,7 +43,7 @@ def submitProcessJob( command_string, script_name, wall_time = '24:00:00', num_t
     #submit job
     #EXPAND THIS PART TO WORK FOR DIFFERENT JOB SUBMISSION SYSTEMS
     #IF POSSIBLE AUTOMATICALLY DETECT THE SUBMISSION SYSTEM
-    return submitQsubJob( script_name, wall_time, num_threads )
+    return submitQsubJob( script_name, wall_time, num_threads, high_memory)
 
 
 def runningJobs():
@@ -66,36 +66,31 @@ def testShellCommand( command_string ):
 
 
 #submit script of given name as a job with given wall-time
-def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1):
+def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1, high_memory = False):
 
     #keep attempting submission until it succeeds
+    submission_command = 'qsub {} -l walltime={}'.format( script_name, wall_time )
+    
+    if num_threads > 1:
+        submission_command += ' -lnodes=1:ppn={}'.format(num_threads) 
+    
+    if high_memory :
+        submission_command += ' -q highmem'
+    
+    submission_command += ' {}'.format( script_name )
     while True:
-        submission_command = 'qsub {} -l walltime={}'.format( script_name, wall_time )
-        if num_threads > 1:
-            submission_command += ' -lnodes=1:ppn={}'.format(num_threads)
-       
-        #run submission command and pipe output to temporary file
-        os.system( submission_command + ' > output_temp.txt 2>> output_temp.txt')
-
-        #check output of submission command for errors 
-        output = ''
-        with open('output_temp.txt') as check:
-            output = check.read()
-        os.system( 'rm output_temp.txt' )
-        
-        error_messages = ['Invalid credential', 'Expired credential', 'Error']
-        error_found = False
-        for error in error_messages :
-            if error in output:
-                error_found = True
-        if not error_found :
-            first_line = output.split('\n')[0]
-            print( first_line )
-            
-            #break loop by returning job id when submission was successful 
-            return first_line.split('.')[0]
-        time.sleep(1)
-
+        try:
+            qsub_output = subprocess.check_output( submission_command, shell=True, stderr=subprocess.STDOUT )
+    
+        #submission failed, try again after one second 
+        except subprocess.CalledProcessError:
+            time.sleep( 1 )
+    
+        #submission succeeded 
+        else:
+            print( qsub_output )
+            break
+			
 
 #check running qsub jobs 
 def runningQsubJobs():
@@ -105,6 +100,9 @@ def runningQsubJobs():
         try:
             qstat_output = subprocess.check_output( 'qstat -u$USER', shell=True, stderr=subprocess.STDOUT )
             break
+
+        #qstat failed, try again after one second 
         except subprocess.CalledProcessError:
-            pass
+            time.sleep( 1 )
+
     return ( output_line.split('.')[0] for output_line in qstat_output.split('\n') )
