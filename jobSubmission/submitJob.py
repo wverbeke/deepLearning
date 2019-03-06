@@ -87,8 +87,11 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1, high_me
     
         #submission succeeded 
         else:
-            print( sub_output.split('\n')[0] )
-            break
+            first_line = qsub_output.split('\n')[0]
+            print( first_line )
+
+            #break loop by returning job id when submission was successful 
+            return first_line.split('.')[0]
 			
 
 #check running qsub jobs 
@@ -98,10 +101,10 @@ def runningQsubJobs():
     while True:
         try:
             qstat_output = subprocess.check_output( 'qstat -u$USER', shell=True, stderr=subprocess.STDOUT )
-            break
 
         #qstat failed, try again after one second 
         except subprocess.CalledProcessError:
             time.sleep( 1 )
 
-    return ( output_line.split('.')[0] for output_line in qstat_output.split('\n') )
+        else:
+            return ( output_line.split('.')[0] for output_line in qstat_output.split('\n') )
