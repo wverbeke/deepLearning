@@ -77,7 +77,6 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1, high_me
     if high_memory :
         submission_command += ' -q highmem'
     
-    submission_command += ' {}'.format( script_name )
     while True:
         try:
             qsub_output = subprocess.check_output( submission_command, shell=True, stderr=subprocess.STDOUT )
@@ -88,7 +87,7 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1, high_me
     
         #submission succeeded 
         else:
-            print( qsub_output )
+            print( sub_output.split('\n')[0] )
             break
 			
 
