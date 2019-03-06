@@ -6,7 +6,7 @@ import time
 import sys
 
 #import other parts of framework
-from jobSubmission.jobSubmission import runningJobs
+from jobSubmission.submitJob import runningJobs
 from runTraining import submitTrainingJobs
 
 

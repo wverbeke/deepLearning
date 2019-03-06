@@ -10,7 +10,7 @@ from dataset.ModelTrainingSetup import ModelTrainingSetup
 from configuration.Configuration import newConfigurationFromDict
 from configuration.LearningAlgorithms import *
 from configuration.InputReader import *
-from jobSubmission.jobSubmission import submitProcessJob 
+from jobSubmission.submitJob import submitProcessJob 
 from miscTools.listContent import listSubDirectories
 from output.OutputParser import OutputParser
 
@@ -27,7 +27,7 @@ def trainAndEvaluateModel( training_configuration, model_configuration ):
 
 
 
-def submitTrainingJob( configuration, number_of_threads, output_directory ):
+def submitTrainingJob( configuration, number_of_threads, high_memory, output_directory):
     
     #model name 
     model_name = configuration.name() 
@@ -54,7 +54,7 @@ def submitTrainingJob( configuration, number_of_threads, output_directory ):
     configuration.toJSON( os.path.join( output_directory, model_name, 'configuration_' + model_name + '.json' ) )
     
     #submit this process 
-    return submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads )
+    return submitProcessJob( command_string, 'trainModel.sh', wall_time = '24:00:00', num_threads = number_of_threads, high_memory = high_memory )
 
 
 #convert string to either float, integer or boolean, or keep it as a string
@@ -157,10 +157,19 @@ def submitTrainingJobs( configuration_file_name ):
         print( 'Error : requesting to train {} models. The cluster only allows {} jobs to be submitted.'.format( number_of_models, max_number_of_trainings ) )
         print( 'Please modify the configuration file to train less models.')
         sys.exit()
+
+    #check if any job submission requirements were specified 
+    number_of_threads = 1 
+    if hasattr( configuration_file, 'number_of_threads' ):
+        number_of_threads = configuration_file.number_of_threads
+    high_memory = False
+    if hasattr( configuration_file, 'high_memory' ):
+        high_memory = configuration_file.high_memory
  
+    #submit jobs and store their id
     job_id_list = []
     for configuration in configuration_list:
-        job_id = submitTrainingJob( configuration, configuration_file.number_of_threads, output_directory_name )
+        job_id = submitTrainingJob( configuration, number_of_threads, high_memory, output_directory_name )
         job_id_list.append( job_id )
     
     if isGeneticAlgorithmInput( configuration_file ):
