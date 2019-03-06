@@ -32,6 +32,7 @@ test_fraction = 0.2
 use_genetic_algorithm = False
 
 number_of_threads = 1
+high_memory = False
 
 if use_genetic_algorithm:
 

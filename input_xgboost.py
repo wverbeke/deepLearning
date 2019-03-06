@@ -33,6 +33,7 @@ number_of_threads = 1
 
 #use genetic algorithm or grid-scan for optimization
 use_genetic_algorithm = False
+high_memory = False
 
 if use_genetic_algorithm:
 
