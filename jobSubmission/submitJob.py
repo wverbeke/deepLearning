@@ -83,7 +83,7 @@ def submitQsubJob( script_name, wall_time = '24:00:00', num_threads = 1, high_me
     
         #submission failed, try again after one second 
 		except subprocess.CalledProcessError as error:
-			print('Caught error : }.\t Attempting resubmission.'.format( error.output ) )
+			print('Caught error : "{}".\t Attempting resubmission.'.format( error.output ) )
             time.sleep( 1 )
     
         #submission succeeded 
