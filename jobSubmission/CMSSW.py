@@ -4,7 +4,7 @@ Tools to check the current CMSSW version, and make a new setup if no prior CMSSW
 
 import os
 
-_recent_cmssw_release = 'CMSSW_10_2_11_patch1'
+_recent_cmssw_release = 'CMSSW_10_2_13'
 
 
 
