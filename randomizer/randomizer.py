@@ -54,18 +54,18 @@ def eventSize( tree ):
 
 #number of events taking 1 GB of memory 
 def numberOfEventsPerGB( event_size ):
-    num_events = int( 4e9//event_size )
+    num_events = int( 1e9//event_size )
     return num_events 
 
 
 #number of events to read from file in one pass
-def numberOfEventsToRead( tree, maximum = 1000000 ):
+def numberOfEventsToRead( tree, maximum = 50000 ):
     num_events_per_GB = numberOfEventsPerGB( eventSize(tree) )
     return min( num_events_per_GB, maximum )
 
 
 #number of splittings in randomization depending on event size 
-def numberOfFileSplittings( tree, maximum = 1000000):
+def numberOfFileSplittings( tree, maximum = 50000):
     number_of_events = numberOfEvents( tree )
     number_of_events_to_read = numberOfEventsToRead( tree, maximum )
     return max(1, round( number_of_events / number_of_events_to_read ) )
