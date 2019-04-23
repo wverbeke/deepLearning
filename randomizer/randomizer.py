@@ -9,16 +9,8 @@ import os
 from ROOT import TFile, TTree
 
 from BranchInfo import BranchInfo, BranchInfoCollection
-
-
-def randomIndices( length ):
-    random_indices = np.arange( length )
-    np.random.shuffle( random_indices )
-    return random_indices
-
-
-def numberOfEvents( tree ):
-    return len( tree )
+from eventSize import numberOfFileSplittings, numberOfEventsToRead
+from shuffle import randomIndices
 
 
 def splitFileName( original_path ):
@@ -42,35 +34,6 @@ def getFileKeys( root_file ):
         seen_keys.add( key )
 
 
-#estimate size of single event in bytes 
-def eventSize( tree ):
-    branches = ( tree[key] for key in tree.keys() )
-    total_size = 0
-    for branch in branches:
-        total_size += branch.uncompressedbytes()
-    event_size = total_size / numberOfEvents( tree )
-    return event_size
-
-
-#number of events taking 1 GB of memory 
-def numberOfEventsPerGB( event_size ):
-    num_events = int( 1e9//event_size )
-    return num_events 
-
-
-#number of events to read from file in one pass
-def numberOfEventsToRead( tree, maximum = 50000 ):
-    num_events_per_GB = numberOfEventsPerGB( eventSize(tree) )
-    return min( num_events_per_GB, maximum )
-
-
-#number of splittings in randomization depending on event size 
-def numberOfFileSplittings( tree, maximum = 50000):
-    number_of_events = numberOfEvents( tree )
-    number_of_events_to_read = numberOfEventsToRead( tree, maximum )
-    return max(1, round( number_of_events / number_of_events_to_read ) )
-
-
 def createRandomizedFile( input_file_name ):
 
     f = uproot.open( input_file_name )
@@ -91,10 +54,10 @@ def createRandomizedFile( input_file_name ):
             split_trees.append( t )
         
         #write each event to a random input file 
-        random_file_choices = np.random.choice( np.arange( number_of_splittings ), numberOfEvents( tree ) ) 
+        random_file_choices = np.random.choice( np.arange( number_of_splittings ), len( tree ) ) 
         
         events_per_iteration = numberOfEventsToRead( tree )
-        for i in range( 0, numberOfEvents( tree ), events_per_iteration ):
+        for i in range( 0, len( tree ), events_per_iteration ):
             loaded_arrays = { key.decode('utf-8') : value for key, value in tree.arrays( entrystart = i, entrystop = i + events_per_iteration ).items() }
             size = min( events_per_iteration,  len( list( loaded_arrays.values() )[0] ) )
             for j in range( size ):
@@ -120,7 +83,7 @@ def createRandomizedFile( input_file_name ):
             loaded_arrays = { key.decode('utf-8') : value for key, value in t.arrays().items() }
         
             #randomly shuffle all arrays
-            size = numberOfEvents( t )
+            size = len( t )
             random_indices = randomIndices( size )
         
             for key in loaded_arrays:
