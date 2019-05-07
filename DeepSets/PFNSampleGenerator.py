@@ -135,3 +135,8 @@ class PFNSampleGenerator :
     #number of testing batches 
     def numberOfTestBatches( self, batch_size ):
         return self.__numberOfBatches( len( self.__tree ) - self.__minTestIndex(), batch_size )
+
+
+
+if __name__ == '__main__':
+    pass
