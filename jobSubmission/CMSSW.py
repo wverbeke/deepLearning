@@ -4,7 +4,7 @@ Tools to check the current CMSSW version, and make a new setup if no prior CMSSW
 
 import os
 
-_recent_cmssw_release = 'CMSSW_10_2_11_patch1'
+_recent_cmssw_release = 'CMSSW_10_2_13'
 
 
 
@@ -74,9 +74,21 @@ def CMSSWVersionIsUpToDate():
     return used_version >= target_version
 
 
+def cmsrel( verion_name ):
+    return subprocess.Popen( 'cmsrel {}'.format( version_name ) ) 
+
+
 def setupCMSSW( version_name ):
-    os.system( 'cmsrel {}'.format( version_name ) )
-    os.system( 'cd {}/src/; cmsenv'.format( version_name ) )
+    try:
+        cmsrel( version_name )
+
+    #cms commands are not yet recognized!
+    except subprocess.CalledProcessError:
+        subprocess.Popen( 'source /cvmfs/cms.cern.ch/cmsset_default.sh' )
+        cmsrel( version_name )
+
+    #set up cms environment 
+    subprocess.Popen( 'cd {}/src/; cmsenv'.format( version_name ) )
 
 
 def getCMSSWDirectory():

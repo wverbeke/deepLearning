@@ -18,8 +18,8 @@ def newJobScript( script_name ):
 
     #set up CMSSW on worker node
     script = open( script_name, 'w' )
-    script.write('cd {}/src\n'.format( getCMSSWDirectory() ) )
     script.write('source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
+    script.write('cd {}/src\n'.format( getCMSSWDirectory() ) )
     script.write('eval `scram runtime -sh`\n')
 
     #inside the job switch back to directory where program was executed 
