@@ -31,7 +31,7 @@ class GeneticAlgorithmWatcher :
 
 if __name__ == '__main__' :
 
-    if len( sys.argv ) < 3:
+    if len( sys.argv ) < 2:
         print( 'Error: incorrect number of arguments given to script.')
         print( 'Usage: <python geneticAlgorithmWatcher.py configuration.py>')
  
