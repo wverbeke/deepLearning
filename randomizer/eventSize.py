@@ -28,4 +28,4 @@ def numberOfEventsToRead( uproot_tree, maximum_amount = 50000, maximum_size = 1)
 def numberOfFileSplittings( uproot_tree, maximum = 50000 ):
     number_of_events = len( uproot_tree )
     number_of_events_to_read = numberOfEventsToRead( uproot_tree, maximum )
-    return max(1, round( number_of_events / number_of_events_to_read ) )
+    return max(1, int( round( number_of_events / number_of_events_to_read ) ) )
