@@ -1,16 +1,18 @@
 import uproot
 import numpy as np
 
-#from collections import namedtuple
 import time
 import sys 
 import os
-
 from ROOT import TFile, TTree
 
-from BranchInfo import BranchInfo, BranchInfoCollection
-from eventSize import numberOfFileSplittings, numberOfEventsToRead
-from shuffle import randomIndices
+#import other parts of framework
+import sys
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert( 0, main_directory )
+from randomizer.BranchInfo import BranchInfo, BranchInfoCollection
+from randomizer.eventSize import numberOfFileSplittings, numberOfEventsToRead
+from randomizer.shuffle import randomIndices
 
 
 def splitFileName( original_path ):
