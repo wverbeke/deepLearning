@@ -10,6 +10,7 @@ sys.path.insert( 0, main_directory )
 from randomizer.BranchInfo import BranchInfoCollection
 from randomizer.eventSize import numberOfEventsToRead
 from miscTools.stringTools import removePathAndExtension
+from randomizer.TreeIterator import TreeIterator
 
 
 #return set with all possible values for given branch
@@ -39,28 +40,26 @@ def splitFile( input_file_name, input_tree_name, splitting_branch_name ):
         name = '{}_{}_{}'.format( input_tree_name, splitting_branch_name, value )
         split_trees[value] = TTree( name, name )
         branch_collection.addBranches( split_trees[value] )
-        
-    #loop over the original tree and write the events to the corresponding new trees 
-    events_per_iteration = numberOfEventsToRead( input_tree )
-    for i in range( 0, len(input_tree), events_per_iteration ):
-        loaded_arrays = { key.decode('utf-8') : value for key, value in input_tree.arrays( entrystart = i, entrystop = i + events_per_iteration ).items() }
-        split_array = loaded_arrays[ splitting_branch_name ]
-        size = min( events_per_iteration, len( list( loaded_arrays.values() )[0] ) )
-        for j in range( size ):
-            branch_collection.fillArrays( loaded_arrays, j )
-            split_trees[ split_array[j] ].Fill()
 
+    for array_map in TreeIterator( input_tree ):
+        split_array = array_map[ splitting_branch_name ]
+        for j in range( len( array_map ) ):
+            branch_collection.fillArrays( array_map, j )
+            split_trees[ split_array[j] ].Fill()     
+    
     for tree in split_trees.values():
         tree.Write()
     split_file.Close()
 
 
 if __name__ == '__main__':
+
     if len( sys.argv ) == 4:
         input_file_name = sys.argv[1] 
         input_tree_name = sys.argv[2] 
         splitting_branch_name = sys.argv[3]
         splitFile( input_file_name, input_tree_name, splitting_branch_name )
+
     else:
         print('Error: invalid number of arguments given.' )
         print('Usage: python splitFile.py <input_file_name> <input_tree_name> <splitting_branch_name>') 
