@@ -1,16 +1,19 @@
 import uproot
 import numpy as np
 
-#from collections import namedtuple
 import time
 import sys 
 import os
-
 from ROOT import TFile, TTree
 
-from BranchInfo import BranchInfo, BranchInfoCollection
-from eventSize import numberOfFileSplittings, numberOfEventsToRead
-from shuffle import randomIndices
+#import other parts of framework
+import sys
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert( 0, main_directory )
+from randomizer.BranchInfo import BranchInfo, BranchInfoCollection
+from randomizer.eventSize import numberOfFileSplittings, numberOfEventsToRead
+from randomizer.shuffle import randomIndices
+from randomizer.TreeIterator import TreeIterator
 
 
 def splitFileName( original_path ):
@@ -53,16 +56,13 @@ def createRandomizedFile( input_file_name ):
             branch_collection.addBranches( t )
             split_trees.append( t )
         
-        #write each event to a random input file 
-        random_file_choices = np.random.choice( np.arange( number_of_splittings ), len( tree ) ) 
-        
-        events_per_iteration = numberOfEventsToRead( tree )
-        for i in range( 0, len( tree ), events_per_iteration ):
-            loaded_arrays = { key.decode('utf-8') : value for key, value in tree.arrays( entrystart = i, entrystop = i + events_per_iteration ).items() }
-            size = min( events_per_iteration,  len( list( loaded_arrays.values() )[0] ) )
-            for j in range( size ):
-                branch_collection.fillArrays( loaded_arrays, j )
-                split_trees[ random_file_choices[i + j] ].Fill()
+        for array_map in TreeIterator( tree ):
+
+            #write each event to a random input file 
+            random_file_choices = np.random.choice( np.arange( number_of_splittings ), len( array_map ) )
+            for j in range( len( array_map ) ):
+                branch_collection.fillArrays( array_map, j )
+                split_trees[ random_file_choices[j] ].Fill() 
         
         for t in split_trees:
             t.Write()

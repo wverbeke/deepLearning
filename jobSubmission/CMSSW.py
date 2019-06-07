@@ -3,6 +3,7 @@ Tools to check the current CMSSW version, and make a new setup if no prior CMSSW
 """
 
 import os
+import subprocess
 
 _recent_cmssw_release = 'CMSSW_10_2_13'
 
@@ -74,7 +75,7 @@ def CMSSWVersionIsUpToDate():
     return used_version >= target_version
 
 
-def cmsrel( verion_name ):
+def cmsrel( version_name ):
     return subprocess.Popen( 'cmsrel {}'.format( version_name ) ) 
 
 
