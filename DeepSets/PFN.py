@@ -119,6 +119,7 @@ class PFN:
             ),
             callbacks.ModelCheckpoint(
                 monitor = 'val_auc',
+                mode = 'max',
                 filepath = output_name,
                 save_best_only = True
             )
