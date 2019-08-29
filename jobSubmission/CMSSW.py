@@ -5,7 +5,7 @@ Tools to check the current CMSSW version, and make a new setup if no prior CMSSW
 import os
 import subprocess
 
-_recent_cmssw_release = 'CMSSW_10_2_13'
+_recent_cmssw_release = 'CMSSW_10_2_16'
 
 
 
