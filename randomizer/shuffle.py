@@ -13,6 +13,6 @@ def shuffleSimulataneously( *arrays ):
         raise ValueError('All arrays must have the same length to be simultaneously shuffled.')
 
     #shuffle arrays
-    random_indices = numpy.random.permutation( array_size )
+    random_indices = np.random.permutation( array_size )
     for array in arrays:
         array = array[ random_indices ]
