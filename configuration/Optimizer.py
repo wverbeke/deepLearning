@@ -3,6 +3,7 @@ import keras
 class OptimizerInfo():
 
     def __init__(self, optimizer_name):
+
     	#optimizer name, keras optimizer class, default learning rate, default decay rate 
        	info = {
        		'RMSprop' : (keras.optimizers.RMSprop, 0.001, 0.0),
@@ -14,7 +15,8 @@ class OptimizerInfo():
     	}
 
         if not (optimizer_name in info ):
-            print( 'Error in OptimizerInfo::__init__() : optimizer {} not found. Returning control.'.format( optimizer_name ) )
+            raise KeyError( 'Error in OptimizerInfo::__init__() : optimizer {} not found.'.format( optimizer_name ) )
+
         self.keras_optimizer = info[optimizer_name][0]
         self.default_learning_rate = info[optimizer_name][1]
         self.default_decay = info[optimizer_name][2]

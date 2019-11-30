@@ -26,6 +26,7 @@ from modelTraining.trainXGBoostModel import trainGradientBoostedForestClassifica
 from diagnosticPlotting import *
 from configuration.LearningAlgorithms import *
 from configuration.Optimizer import Optimizer
+from configuration.Activation import Activation
 from dataset.Dataset import concatenateAndShuffleDatasets
 from dataset.DataCollection import DataCollection
 
@@ -150,6 +151,9 @@ class ModelTrainingSetup:
         #make keras optimizer object 
         keras_optimizer = Optimizer( configuration['optimizer'], configuration['learning_rate'], configuration['learning_rate_decay'] ).kerasOptimizer()
 
+        #retrieve keras activation layer class
+        keras_activation_layer = Activation( configuration['activation'] ).kerasActivationLayer()
+
         #train classifier 
         trainDenseClassificationModel(
             training_data.samples, training_data.labels, validation_data.samples, validation_data.labels, 
@@ -157,11 +161,15 @@ class ModelTrainingSetup:
             model_name = configuration.name(), 
             number_of_hidden_layers = configuration['number_of_hidden_layers'],
             units_per_layer = configuration['units_per_layer'],
-            activation = 'relu', 
+            #activation = 'relu', 
+            activation_layer = keras_activation_layer,
             optimizer = keras_optimizer,
             dropout_first = configuration['dropout_first'],
             dropout_all = configuration['dropout_all'],
             dropout_rate = configuration['dropout_rate'],
+			batchnorm_first = configuration['batchnorm_first'],
+			batchnorm_hidden = configuration['batchnorm_hidden'],
+			batchnorm_before_activation = configuration['batchnorm_before_activation'],
             num_epochs = configuration['number_of_epochs'], 
             batch_size = configuration['batch_size'],
             number_of_threads = self.__number_of_threads

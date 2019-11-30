@@ -8,7 +8,7 @@ import numpy as np
 
 #return an array of randomly shuffled indices for a given array
 def randomlyShuffledIndices( array ):
-    return numpy.random.permutation( len( array ) )
+    return np.random.permutation( len( array ) )
 
 
 
