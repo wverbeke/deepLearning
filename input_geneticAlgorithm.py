@@ -39,33 +39,42 @@ if use_genetic_algorithm:
     population_size = 200
 
     #ranges of neural network parameters for the genetic algorithm to scan
+    #This is just an example, for real use cases it is probably best to reduce the amount of options!
     parameter_ranges = {
         'num_hidden_layers' : [2, 3, 4, 5, 6, 7, 8, 9, 10],
         'units_per_layer' : list( range(16, 1024) ),
         'optimizer' : ['RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam'],
+        'activation' : [ 'prelu', 'selu', 'leakyrelu', 'relu' ],
         'learning_rate' : (0.01, 1),
         'learning_rate_decay' : (0.9, 1),
         'dropout_first' : (False, True),
         'dropout_all' : (False, True), 
         'dropout_rate' : (0, 0.5),
-
-        #advice not to change these parameters
-        'number_of_epochs' : [20], 
-        'batch_size' : list( range( 32, 256 ) )
+        'batchnorm_first' : (False, True),
+        'batchnorm_hidden' : (False, True),
+        'batchnorm_before_activation' : (False, True),
+        'number_of_epochs' : [200], 
+        'batch_size' : list( range( 32, 512 ) )
     }
 
+
 else:
+    
+    #all parameter values to be covered by the grid-scan. Redundant configurations are automatically removed.
+    #This is just an example, for real use cases one has to reduce the amount of options!
     parameter_values = {
         'num_hidden_layers' : [2, 3, 4, 5, 6, 7, 8, 9, 10],
         'units_per_layer' : [16, 32, 64, 128, 256, 512],
         'optimizer' : ['Nadam'],
+        'actviation' : [ 'prelu', 'selu', 'leakyrelu', 'relu' ],
         'learning_rate' : [0.1, 1, 0.01],
         'learning_rate_decay' : [1, 0.99, 0.95],
         'dropout_first' : [False, True],
         'dropout_all' : [False, True],
         'dropout_rate' : [0.5, 0.3],
-
-        #advice not to change these parameters
-        'number_of_epochs' : [5],
-        'batch_size' : [128]
+        'batchnorm_first' : [False, True],
+        'batchnorm_hidden' : [False, True],
+        'batchnorm_before_activation' : [False, True],
+        'number_of_epochs' : [200],
+        'batch_size' : [256, 512]
     }

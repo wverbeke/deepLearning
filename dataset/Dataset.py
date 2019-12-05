@@ -8,9 +8,7 @@ import numpy as np
 
 #return an array of randomly shuffled indices for a given array
 def randomlyShuffledIndices( array ):
-    indices = np.arange( len(array) )
-    np.random.shuffle( indices )
-    return indices 
+    return np.random.permutation( len( array ) )
 
 
 
@@ -91,6 +89,11 @@ class Dataset:
             self.__outputs = self.__outputs[ shuffled_indices ]
         except AttributeError:
             pass
+
+        
+    #allow scaling of weights
+    def scaleWeights( self, scale_factor ):
+        self.__weights *= scale_factor
 
 
 

@@ -4,11 +4,8 @@ Tools for shuffling arrays
 
 import numpy as np
 
-
 def randomIndices( length ):
-    random_indices = np.arange( length )
-    np.random.shuffle( random_indices )
-    return random_indices
+    return np.random.permutation( length )
 
 
 #shuffle several arrays consistencly

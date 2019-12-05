@@ -11,6 +11,7 @@ import sys
 main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 sys.path.insert(0, main_directory )
 from configuration.Optimizer import Optimizer
+from configuration.Activation import Activation
 from diagnosticPlotting import plotKerasMetricComparison
 
 
@@ -24,7 +25,7 @@ def auc( true_labels, predictions ):
 #particle flow network
 class PFN:
     
-    def __init__( self, input_shape_particleFlow, input_shape_highlevel, num_hidden_layers_latent = 2, nodes_per_layer_latent = 128, batch_normalization_latent = True, dropout_rate_latent = 0, latent_space_size = 256, num_hidden_layers_output = 2, nodes_per_layer_output = 128, batch_normalization_output = True, dropout_rate_output = 0, optimizer_name = 'Nadam', relative_learning_rate = 1, relative_learning_rate_decay = 1):
+    def __init__( self, input_shape_particleFlow, input_shape_highlevel, num_hidden_layers_latent = 2, nodes_per_layer_latent = 128, batch_normalization_latent = True, dropout_rate_latent = 0, latent_space_size = 256, num_hidden_layers_output = 2, nodes_per_layer_output = 128, batch_normalization_output = True, dropout_rate_output = 0, optimizer_name = 'Nadam', relative_learning_rate = 1, relative_learning_rate_decay = 1, activation_name = 'relu' ):
         
         self.__input_shape_particleFlow = input_shape_particleFlow
         self.__input_shape_highlevel = input_shape_highlevel
@@ -35,16 +36,19 @@ class PFN:
         self.__dropout_rate_latent = dropout_rate_latent
         self.__latent_space_size = latent_space_size 
         
-        
         self.__num_hidden_layers_output = num_hidden_layers_output
         self.__nodes_per_layer_output = nodes_per_layer_output
         self.__batch_normalization_output = batch_normalization_output
         self.__dropout_rate_output = dropout_rate_output
+
+        self.__activation_layer = Activation( activation_name ).kerasActivationLayer()
         
         self.__model = self.__produceModel() 
         self.__model.summary()
         self.__optimizer = Optimizer( optimizer_name, relative_learning_rate, relative_learning_rate_decay )
+
         self.__compileModel()
+
         
     
     def __produceModel( self ):
@@ -63,7 +67,8 @@ class PFN:
             if self.__dropout_rate_latent > 0 and l != 0: #don't drop out any input features
                 particleFlow_intermediate = layers.SpatialDropout1D( self.__dropout_rate_latent )( particleFlow_intermediate ) #layers.TimeDistributed wrapped around dropout will not make the same nodes drop for each particle!
             
-            particleFlow_intermediate = layers.TimeDistributed( layers.Dense( self.__nodes_per_layer_latent, activation = 'relu' ) )( particleFlow_intermediate )
+            particleFlow_intermediate = layers.TimeDistributed( layers.Dense( self.__nodes_per_layer_latent, activation = 'linear' ) )( particleFlow_intermediate )
+            particleFlow_intermediate = self.__activation_layer()( particleFlow_intermediate )
 
         if self.__batch_normalization_latent:
         	particleFlow_intermediate = layers.BatchNormalization()( particleFlow_intermediate )
@@ -93,7 +98,8 @@ class PFN:
             if self.__dropout_rate_output > 0 and l != 0: #consider first layer of dense network as input layer, for which we don't want dropout
                 merged_intermediate = layers.Dropout( self.__dropout_rate_output )( merged_intermediate )
         
-            merged_intermediate = layers.Dense( self.__nodes_per_layer_output, activation = 'relu' )( merged_intermediate )
+            merged_intermediate = layers.Dense( self.__nodes_per_layer_output, activation = 'linear' )( merged_intermediate )
+            merged_intermediate = self.__activation_layer()( merged_intermediate )
         
         output = layers.Dense( 1, activation = 'sigmoid' )( merged_intermediate )
         
@@ -106,19 +112,19 @@ class PFN:
         self.__model.compile(
             optimizer = self.__optimizer.kerasOptimizer(),
             loss = 'binary_crossentropy',
-            metrics = [ auc, 'acc']
+            metrics = [ 'acc', auc ]
         )
     
     
     def trainModel( self, sample_generator, output_name, batch_size = 512, number_of_epochs = 100, patience = 4):
         callback_list = [
             callbacks.EarlyStopping(
-                monitor = 'auc',
+                monitor = 'acc',
                 mode = 'max',
                 patience = patience
             ),
             callbacks.ModelCheckpoint(
-                monitor = 'val_auc',
+                monitor = 'val_acc',
                 mode = 'max',
                 filepath = output_name,
                 save_best_only = True
