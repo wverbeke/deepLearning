@@ -67,7 +67,7 @@ def trainDenseClassificationModel(train_data, train_labels, validation_data, val
     model.compile(
         optimizer = optimizer,
         loss = 'binary_crossentropy',
-        metrics = ['accuracy']
+        metrics = ['acc']
     )
 
     #cut off training at convergence and save model with best validation

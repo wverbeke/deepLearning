@@ -90,6 +90,11 @@ class Dataset:
         except AttributeError:
             pass
 
+        
+    #allow scaling of weights
+    def scaleWeights( self, scale_factor ):
+        self.__weights *= scale_factor
+
 
 
 #add two Datasets and shuffle them afterwards

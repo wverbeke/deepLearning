@@ -4,6 +4,12 @@ import numbers
 import operator
 from collections import OrderedDict
 
+#import other parts of framework
+import os, sys
+main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
+sys.path.insert( 0, main_directory )
+from miscTools.stringTools import canConvertToFloat
+
 
 
 #abstract base class representing the configuration of a machine learning algorithm
@@ -79,25 +85,45 @@ class Configuration( abc.ABC ):
 
 
     def name( self ):
+
         model_name = ''
 
+        #build model name by combining the parameters of the configuration
         for parameter_name in self._parameters:
 
-            #we want to return a name where the parameter names are separated by underscored
-            #if a parameter has a name including underscores, we will remove them and capitalize the parts of the name instead 
-            parts = parameter_name.split('_')
-            for i, part in enumerate(parts):
-                if i > 0:
-                    part = part.capitalize()
-                model_name += part 
-        
-            #add value to name 
+            #convert the parameter value to a string
             value_name = str( self._parameters[parameter_name] )
-            value_name = value_name.replace('.', 'p')
-            model_name += '=' + value_name
 
+            #for boolean attributes just add the name if attribute is True ( necessary to avoid filenames longer than OS can handle ) and write nothing if it is False
+            if value_name == 'False':
+                continue
+
+            #add the name of the paramter for numeric paramters or boolean parameters that are True
+            #for parameters that are strings, just the parameter value is added to the model name, not the parameter name.
+            if canConvertToFloat( value_name ) or value_name == 'True' : 
+
+                #we want to return a name where the parameter names are separated by underscores
+                #if a parameter has a name including underscores, we will remove them and capitalize the parts of the name instead 
+                parts = parameter_name.split('_')
+                for i, part in enumerate( parts ):
+                    if i > 0:
+                        part = part.capitalize()
+                    model_name += part 
+
+                #add and extra '=' for numeric parameters ( to be followed by the value )
+                if canConvertToFloat( value_name ):
+                    model_name += '='
+
+            #add value name except for boolean parameters
+            if value_name != 'True':
+
+                #replace . with p for floating point parameter values
+                model_name += value_name.replace( '.', 'p' )
+        
             #separate parameters by underscore 
             model_name += '_'
+
+        #remove trailing underscore
         model_name = model_name[:-1]
 
         return model_name 
