@@ -24,8 +24,25 @@ class ParameterGenerator():
         self.__parameter_array = parameter_array
         
 
-    #yield random parameter array
-    def yieldRandomParameters( self, size = None ):
+    #generator for yielding a single random parameter by walking through the shuffled parameter array
+    def __parameterGenerator( self ):
+        while True:
+            np.random.shuffle( self.__parameter_array )
+            for entry in self.__parameter_array:
+                yield entry
+
+
+    #make the generator and yield a single random parameter combination
+    __generator = None
+    def yieldRandomParameter( self ):
+        if self.__generator is None :
+            self.__generator = self.__parameterGenerator()
+        return next( self.__generator )
+            
+
+    #Vectorized version of parameter generation This is not being used for the moment 
+    def __yieldRandomParameters_vectorized( self, size = None ):
+
         ret_array = None
         current_size = size
         input_size = len( self.__parameter_array )
@@ -39,25 +56,17 @@ class ParameterGenerator():
         if current_size < input_size and current_size != 0:
             np.random.shuffle( self.__parameter_array )
             if ret_array is None:
-                ret_array = self.__parameter_array[0:size]
+                ret_array = self.__parameter_array[0:current_size]
             else:
-                ret_array = np.concatenate( [ ret_array, self.__parameter_array ], axis = 0 )
+                ret_array = np.concatenate( [ ret_array, self.__parameter_array[0:current_size] ], axis = 0 )
         return ret_array
 
 
-    #yield a single random parameter by walking through the shuffled parameter array
-    def __parameterGenerator( self ):
-        while True:
-            np.random.shuffle( self.__parameter_array )
-            for entry in self.__parameter_array:
-                yield entry
+    #produce an array of randomly sampled parameter combinations
+    def yieldRandomParameters( self, size = None ):
+        return np.array( [ self.yieldRandomParameter() for i in range( size ) ] )
 
-    __generator = None
-    def yieldRandomParameter( self ):
-        if self.__generator is None :
-            self.__generator = self.__parameterGenerator()
-        return next( self.__generator )
-            
+
 
 class ParameterGenerator_memoryEfficient():
 

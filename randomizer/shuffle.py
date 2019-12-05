@@ -4,6 +4,10 @@ Tools for shuffling arrays
 
 import numpy as np
 
+def randomIndices( length ):
+    return np.random.permutation( length )
+
+
 #shuffle several arrays consistencly
 def shuffleSimulataneously( *arrays ):
 
@@ -13,6 +17,6 @@ def shuffleSimulataneously( *arrays ):
         raise ValueError('All arrays must have the same length to be simultaneously shuffled.')
 
     #shuffle arrays
-    random_indices = np.random.permutation( array_size )
+    random_indices = randomIndices( array_size )
     for array in arrays:
         array = array[ random_indices ]

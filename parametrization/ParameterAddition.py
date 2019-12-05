@@ -58,7 +58,7 @@ class ParameterAdder():
 
 class ParameterAdderSingleTree():
     
-    def __init__( self, tree, parameter_names, background_defaults ):
+    def __init__( self, tree, parameter_names, background_defaults, is_uproot = False ):
 
         try:
             if len( parameter_names ) != len( background_defaults ):
@@ -80,7 +80,11 @@ class ParameterAdderSingleTree():
             self.__background_defaults.append( background_defaults )
 
         #make array of signal parameters
-        full_parameter_array = treeToArray( tree, self.__parameter_names, cut = '' )
+        if not is_uproot :
+            full_parameter_array = treeToArray( tree, self.__parameter_names, cut = '' )
+        else :
+            full_parameter_array = np.concatenate( [ np.expand_dims( tree.array( key ), axis = 1 ) for key in self.__parameter_names ], axis = 1 )
+            
         signal_parameter_list = []
         for entry in full_parameter_array :
             is_background = True
@@ -123,6 +127,10 @@ class ParameterAdderSingleTree():
             for branch in parameter_branches:
                 branch.Fill()
         tree_to_update.Write()
+
+
+    def yieldRandomParameter( self ):
+        return self.__parameter_generator.yieldRandomParameter()
 
 
 	
