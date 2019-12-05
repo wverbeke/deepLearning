@@ -7,7 +7,6 @@ main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.insert(0, main_directory )
 from randomizer.shuffle import shuffleSimulataneously
 from randomizer.eventSize import numberOfEventsToRead
-#from parametrization.ParameterAddition import ParameterAdderSingleTree
 from parametrization.ParameterGenerator import ParameterGenerator
 
 
