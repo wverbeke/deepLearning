@@ -90,7 +90,7 @@ class PFNSampleGenerator :
             for i, entry in enumerate( par_array ):
                 if entry == background_default:
                     ret_array[i][j] = random_parameters[background_counter][j]
-                    ++background_counter
+                    background_counter += 1
                 else:
                     ret_array[i][j] = entry
         return ret_array
