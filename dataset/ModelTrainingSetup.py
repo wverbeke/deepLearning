@@ -77,7 +77,7 @@ class ModelTrainingSetup:
     def __init__( self, training_data_configuration ):
             
         #to ensure reproducible splitting of the datasets
-        np.random.seed(1)
+        np.random.seed(42)
 
         #make sure input file exists 
         root_file_name = os.path.join( main_directory , training_data_configuration['root_file_name'] )

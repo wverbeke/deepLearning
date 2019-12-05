@@ -29,6 +29,9 @@ class PFNSampleGenerator :
         if parameter_branch_names is not None and parameter_background_defaults is not None:
             self.__parameter_branches = [ uproot_tree[branch] for branch in parameter_branch_names ]
             self.__parameter_background_defaults = list( parameter_background_defaults )
+
+            #ensure consistent generation of parametrization
+            np.random.seed( 42 )
         else:  
             self.__parameter_branches = None
             
