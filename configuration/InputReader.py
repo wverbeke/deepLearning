@@ -16,8 +16,8 @@ from configuration.Configuration import newConfigurationFromDict, Configuration
 
 #class that reads the metadata specifying the test, training and validation data sets
 class TrainingDataReader( Configuration ):
-    _required_parameters = [ 'root_file_name', 'signal_tree_name', 'background_tree_name', 'list_of_branches', 'weight_branch', 'only_positive_weights', 'validation_fraction', 'test_fraction', 'number_of_threads' ]
-
+    _required_parameters = [ 'root_file_name', 'signal_tree_name', 'background_tree_name', 'list_of_branches', 'weight_branch', 'only_positive_weights', 'signal_parameters', 'parameter_shortcut_connection', 'validation_fraction', 'test_fraction', 'number_of_threads' ]
+    
     def __init__( self, configuration_file ):
         self._parameters = {}
         for key in self._required_parameters:
@@ -26,6 +26,12 @@ class TrainingDataReader( Configuration ):
         
         #check whether all necessary keys are present 
         self._allParametersPresent()
+    
+    
+    def _removeRedundancies( self ):
+        if self._parameters['signal_parameters'] is None:
+            self._parameters['parameter_shortcut_connection'] = False
+		
 
 
 

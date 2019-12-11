@@ -21,7 +21,7 @@ from treeToArray import treeToArray
 class ParameterGenerator():
 
     def __init__( self, parameter_array ):
-        self.__parameter_array = parameter_array
+        self.__parameter_array = np.copy( parameter_array )
         
 
     #generator for yielding a single random parameter by walking through the shuffled parameter array

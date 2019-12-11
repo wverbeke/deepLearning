@@ -18,8 +18,8 @@ def plotKerasMetricComparison( training_history, model_name, metric, metric_labe
     plt.plot(epochs, training_metric, 'b', label = 'training ' + metric_label.lower(), lw = 2 )
     plt.plot(epochs, validation_metric, 'r', label = 'validation ' + metric_label.lower(), lw = 2 )
     plt.legend( loc = 'best' )
-    plt.xlabel( 'Epoch', fontsize = 22 )
-    plt.ylabel( metric_label, fontsize = 22 )
+    plt.xlabel( 'Epoch', fontsize = 16 )
+    plt.ylabel( metric_label, fontsize = 16 )
     plt.ticklabel_format( style='sci', axis = 'y', scilimits = ( -2, 2 ) )
     plt.grid( True )
     plt.savefig( metric + '_' + model_name + '.pdf' )
@@ -80,8 +80,8 @@ def plotROC(sig_eff, bkg_eff, model_name):
     
     #plot background rejection as a function of signal efficiency
     plt.plot( sig_eff, backgroundRejection(bkg_eff) , 'b', lw=2)
-    plt.xlabel( 'Signal efficiency', fontsize = 22 )
-    plt.ylabel( 'Background rejection', fontsize = 22 )
+    plt.xlabel( 'Signal efficiency', fontsize = 16 )
+    plt.ylabel( 'Background rejection', fontsize = 16 )
     plt.grid(True)
     plt.savefig('roc_' + model_name + '.pdf') 
 
@@ -114,9 +114,9 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
     addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
 
-    plt.xlabel( 'Model output', fontsize = 22 )
-    plt.ylabel( 'Normalized events', fontsize = 22 )
-    plt.legend(ncol=2, prop={'size': 13})
+    plt.xlabel( 'Model output', fontsize = 16 )
+    plt.ylabel( 'Normalized events', fontsize = 16 )
+    plt.legend(ncol=2, prop={'size': 10})
 
     bottom, top = plt.ylim()
     plt.ylim( 0,  top*1.2)

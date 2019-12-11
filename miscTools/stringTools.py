@@ -2,6 +2,9 @@
 functions for string manipulation that can be re-used 
 """
 
+import os
+
+
 #remove the first character of a string if it is the given character
 def removeLeadingCharacter( string , character):
     new_string = string
@@ -17,3 +20,8 @@ def canConvertToFloat( string ):
         return True
     except ValueError:
         return False
+
+
+#remove directory and file extension from path
+def removePathAndExtension( path_to_file ):
+    return os.path.basename( os.path.splitext( path_to_file )[0] )

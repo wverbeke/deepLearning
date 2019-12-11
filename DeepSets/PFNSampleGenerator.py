@@ -171,7 +171,7 @@ class PFNSampleGenerator :
 
     
     def __numberOfBatches( self, total_size, batch_size ):
-        return int( total_size / batch_size ) + ( total_size % batch_size )
+        return int( total_size / batch_size ) + bool( total_size % batch_size )
 
 
     #number of training batches 
