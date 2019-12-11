@@ -17,20 +17,28 @@ from treeToArray import treeToArray
 
 class DataCollection:
 
-    def __init__( self, tree, branch_names, validation_fraction, test_fraction, is_signal, weight_name = None, only_positive_weights = True ):
+    def __init__( self, tree, branch_names, validation_fraction, test_fraction, is_signal, weight_name = None, only_positive_weights = True, parameter_names = None ):
 
         #test if sensible input is given
-        if (validation_fraction + test_fraction ) >= 1:
+        if ( validation_fraction + test_fraction ) >= 1:
             raise ValueError( 'validation and test fractions sum to a value greater or equal to 1!' )
 
         #read total dataset from tree, and only retain positive weight events if asked 
-        reading_cut = '{}>0'.format(weight_name) if (only_positive_weights and not weight_name is None) else ''
+        reading_cut = '{}>0'.format( weight_name ) if ( only_positive_weights and not weight_name is None ) else ''
         samples_total = treeToArray( tree, branch_names, reading_cut)
-        number_of_samples = len(samples_total)
-        weights_total = treeToArray( tree, weight_name, reading_cut ) if (not weight_name is None) else np.ones( number_of_samples )
+        number_of_samples = len( samples_total )
+        weights_total = treeToArray( tree, weight_name, reading_cut ) if ( not weight_name is None ) else np.ones( number_of_samples )
+    
+        #add parameters if requested
+        parameters_total = None
+        if parameter_names is not None:
+            parameters_total = treeToArray( tree, parameter_names, reading_cut )
+
+        #labels to be predicted by the model. 1 for signal and 0 for background
         labels_total = np.ones( number_of_samples ) if is_signal else np.zeros( number_of_samples ) 
 
-        total_dataset = Dataset( samples_total, weights_total, labels_total )
+        #build the dataset
+        total_dataset = Dataset( samples_total, weights_total, labels_total, None, parameters_total )
 
         #randomly shuffle the dataset to prevent structure before splitting 
         total_dataset.shuffle()
@@ -42,7 +50,14 @@ class DataCollection:
         self.__training_set = total_dataset[:max_index_training]
         self.__validation_set = total_dataset[max_index_training:max_index_validation]
         self.__test_set = total_dataset[max_index_validation:]
-        
+
+        #avoid large numerical scales in the weights during training
+        if weight_name is not None :
+
+            #scaling is strictly only necessary for training set 
+            weight_scale_factor = 1. / np.mean( self.__training_set.weights )
+            self.__training_set.scaleWeights( weight_scale_factor )
+
 
     @property
     def training_set( self ):
@@ -57,3 +72,8 @@ class DataCollection:
     @property
     def test_set( self ):
         return self.__test_set
+
+
+    #verify that the DataCollection has parametrization
+    def isParametric( self ):
+        return self.__training_set.isParametric()

@@ -21,7 +21,7 @@ import sys
 main_directory = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 sys.path.insert( 0, main_directory )
 
-from modelTraining.trainKerasModel import trainDenseClassificationModel, auc 
+from modelTraining.trainKerasModel import KerasClassifierTrainer
 from modelTraining.trainXGBoostModel import trainGradientBoostedForestClassificationModel
 from diagnosticPlotting import *
 from configuration.LearningAlgorithms import *
@@ -29,6 +29,10 @@ from configuration.Optimizer import Optimizer
 from configuration.Activation import Activation
 from dataset.Dataset import concatenateAndShuffleDatasets
 from dataset.DataCollection import DataCollection
+from dataset.CombinedDataCollection import CombinedDataCollection
+
+#temporary, remove
+from configuration.InputReader import *
 
 
 #registry of model training functions 
@@ -90,16 +94,17 @@ class ModelTrainingSetup:
         tree_background = root_file.Get( training_data_configuration['background_tree_name'] )
 
         #use trees to initialize data
-        self.__signal_collection = DataCollection( 
+        signal_collection = DataCollection( 
             tree_signal, 
             training_data_configuration['list_of_branches'], 
             training_data_configuration['validation_fraction'],
             training_data_configuration['test_fraction'], 
             True, 
             training_data_configuration['weight_branch'], 
-            training_data_configuration['only_positive_weights']
+            training_data_configuration['only_positive_weights'],
+            training_data_configuration['signal_parameters']
         )
-        self.__background_collection = DataCollection( 
+        background_collection = DataCollection( 
             tree_background,
             training_data_configuration['list_of_branches'], 
             training_data_configuration['validation_fraction'],
@@ -108,26 +113,28 @@ class ModelTrainingSetup:
             training_data_configuration['weight_branch'], 
             training_data_configuration['only_positive_weights']
         )
-    
-        self.__number_of_threads = training_data_configuration['number_of_threads']
-        self.__feature_names = training_data_configuration['list_of_branches']
+
+        #combined collection that stores signal and background datasets
+        self.__combined_collection = CombinedDataCollection( signal_collection, background_collection )
+
+        #store the configuration object 
+        self.__training_data_configuration = training_data_configuration
+
+        ##number of threads to use
+        #self.__number_of_threads = training_data_configuration['number_of_threads']
+
+        ##store number of features for feature importance plots in XGBoost
+        #self.__feature_names = training_data_configuration['list_of_branches']
 
 
-    #make shuffled training and validation sets 
-    def trainingAndValidationSets( self ):
-        training_data = concatenateAndShuffleDatasets( self.__signal_collection.training_set, self.__background_collection.training_set )
-        validation_data = concatenateAndShuffleDatasets( self.__signal_collection.validation_set, self.__background_collection.validation_set )
-        return training_data, validation_data
-
-    
     #plot ROC curve, compute AUC and plot shape comparison after adding model predictions to the datasets 
     def plotROCAndShapeComparison( self, model_name ):
-        rocAndAUC( self.__signal_collection.validation_set, self.__background_collection.validation_set, model_name )
+        rocAndAUC( self.__combined_collection.signal_validation_set, self.__combined_collection.background_validation_set, model_name )
         compareOutputShapes(
-            self.__signal_collection.training_set,
-            self.__signal_collection.validation_set,
-            self.__background_collection.training_set,
-            self.__background_collection.validation_set,
+            self.__combined_collection.signal_training_set,
+            self.__combined_collection.signal_validation_set,
+            self.__combined_collection.background_training_set,
+            self.__combined_collection.background_validation_set,
             model_name
         )
 
@@ -139,14 +146,13 @@ class ModelTrainingSetup:
         self.plotROCAndShapeComparison( configuration.name() )
 
 
-
     """add functions to train and evaluate a specific machine learning algorithm below, and register them with the correct configuration class"""
 
     #train dense neural network in Keras with TensorFlow backend
     @registerTrainingFunction( DenseNeuralNetworkConfiguration )
     def trainDenseNeuralNetworkClassificationModel( self, configuration ):
         
-        training_data, validation_data = self.trainingAndValidationSets()
+        #training_data, validation_data = self.trainingAndValidationSets()
 
         #make keras optimizer object 
         keras_optimizer = Optimizer( configuration['optimizer'], configuration['learning_rate'], configuration['learning_rate_decay'] ).kerasOptimizer()
@@ -154,47 +160,142 @@ class ModelTrainingSetup:
         #retrieve keras activation layer class
         keras_activation_layer = Activation( configuration['activation'] ).kerasActivationLayer()
 
-        #train classifier 
-        trainDenseClassificationModel(
-            training_data.samples, training_data.labels, validation_data.samples, validation_data.labels, 
-            train_weights = training_data.weights, validation_weights = validation_data.weights, 
-            model_name = configuration.name(), 
-            number_of_hidden_layers = configuration['number_of_hidden_layers'],
-            units_per_layer = configuration['units_per_layer'],
-            #activation = 'relu', 
-            activation_layer = keras_activation_layer,
-            optimizer = keras_optimizer,
-            dropout_first = configuration['dropout_first'],
-            dropout_all = configuration['dropout_all'],
-            dropout_rate = configuration['dropout_rate'],
-			batchnorm_first = configuration['batchnorm_first'],
-			batchnorm_hidden = configuration['batchnorm_hidden'],
-			batchnorm_before_activation = configuration['batchnorm_before_activation'],
-            num_epochs = configuration['number_of_epochs'], 
-            batch_size = configuration['batch_size'],
-            number_of_threads = self.__number_of_threads
-        )
+		#input shape
+        number_of_inputs = len( self.__training_data_configuration['list_of_branches'] )
+        if ( self.__training_data_configuration['signal_parameters'] is not None ) and ( not self.__training_data_configuration[ 'parameter_shortcut_connection' ] ):
+            number_of_inputs += len( self.__training_data_configuration['signal_parameters'] )
+        input_shape = ( number_of_inputs, )
+
+        #build the model 
+        model_builder = KerasClassifierTrainer( configuration.name() )
+        if self.__training_data_configuration[ 'parameter_shortcut_connection' ]:
+            model_builder.buildDenseClassifierParameterShortCut(
+                sample_input_shape = input_shape,
+                parameter_input_shape = ( len( self.__training_data_configuration['signal_parameters'] ), ),
+            	number_of_hidden_layers = configuration['number_of_hidden_layers'], 
+                units_per_layer = configuration['units_per_layer'], 
+                activation_layer = keras_activation_layer, 
+                dropout_first = configuration['dropout_first'],
+                dropout_all = configuration['dropout_all'],
+                dropout_rate = configuration['dropout_rate'],
+                batchnorm_first = configuration['batchnorm_first'],
+                batchnorm_hidden = configuration['batchnorm_hidden'],
+                batchnorm_before_activation = configuration['batchnorm_before_activation'],
+            )
+
+        else:
+            model_builder.buildDenseClassifier(
+				input_shape = input_shape,
+                number_of_hidden_layers = configuration['number_of_hidden_layers'], 
+                units_per_layer = configuration['units_per_layer'], 
+                activation_layer = keras_activation_layer, 
+				dropout_first = configuration['dropout_first'],
+				dropout_all = configuration['dropout_all'],
+				dropout_rate = configuration['dropout_rate'],
+				batchnorm_first = configuration['batchnorm_first'],
+				batchnorm_hidden = configuration['batchnorm_hidden'],
+				batchnorm_before_activation = configuration['batchnorm_before_activation'],
+			)
+
+        #train the model 
+        if self.__training_data_configuration['signal_parameters'] is None:
+            model_builder.trainModelArrays(
+            	train_data = self.__combined_collection.training_set().samples,
+            	train_labels = self.__combined_collection.training_set().labels,
+            	validation_data = self.__combined_collection.validation_set().samples,
+                validation_labels = self.__combined_collection.validation_set().labels,
+            	train_weights = self.__combined_collection.training_set().weights,
+                validation_weights = self.__combined_collection.validation_set().weights,
+                optimizer = keras_optimizer,
+                number_of_epochs = configuration['number_of_epochs'],
+                batch_size = configuration['batch_size'],
+                number_of_threads = self.__training_data_configuration['number_of_threads']
+            )
+
+        else:
+
+            #make new generator in case of shortcut connection
+            if self.__training_data_configuration['parameter_shortcut_connection']:
+                number_of_parameters = len( self.__training_data_configuration['signal_parameters'] )
+                def shortcutGenerator( parametric_sample_generator ):
+                	gen = parametric_sample_generator
+                	for entry in gen:
+                		samples, labels, weights = entry
+                
+                		#split samples and parameters
+                		pars = samples[:, -number_of_parameters:]
+                		samples = samples[:, :-number_of_parameters]
+                
+                		yield [samples, pars], labels, weights
+                
+                training_generator = shortcutGenerator( self.__combined_collection.trainingGenerator( configuration['batch_size'] ) )
+                validation_generator = shortcutGenerator( self.__combined_collection.validationGenerator( configuration['batch_size'] ) )
+            
+            
+            else:
+                training_generator = self.__combined_collection.trainingGenerator( configuration['batch_size'] )
+                validation_generator = self.__combined_collection.validationGenerator( configuration['batch_size'] )
+
+            #train_generator, train_steps_per_epoch, validation_generator, validation_steps_per_epoch, optimizer = optimizers.Nadam(), number_of_epochs = 20, number_of_threads = 1 )
+            
+            model_builder.trainModelGenerators(
+                train_generator = training_generator,
+                train_steps_per_epoch = self.__combined_collection.numberOfTrainingBatches( configuration['batch_size'] ),
+                validation_generator = validation_generator,
+                validation_steps_per_epoch = self.__combined_collection.numberOfValidationBatches( configuration['batch_size'] ),
+                optimizer = keras_optimizer,
+                number_of_epochs = configuration['number_of_epochs'],
+                number_of_threads = self.__training_data_configuration['number_of_threads']
+            )
+
+            #rain_generator, train_steps_per_epoch, validation_generator, validation_steps_per_epoch, optimizer = optimizers.Nadam(), number_of_epochs = 20, number_of_threads = 1 )
+                
 
         #load trained classifier 
-        model = models.load_model( configuration.name() + '.h5', custom_objects = {'auc':auc})
-
+        #model = models.load_model( configuration.name() + '.h5', custom_objects = {'auc':auc})
+        model = models.load_model( configuration.name() + '.h5' )
+        
         #make predictions 
-        self.__signal_collection.training_set.addOutputs( model.predict( self.__signal_collection.training_set.samples ) )
-        self.__signal_collection.validation_set.addOutputs( model.predict( self.__signal_collection.validation_set.samples ) )
+        if self.__training_data_configuration['parameter_shortcut_connection']:
+            self.__combined_collection.signal_training_set.addOutputs( model.predict( [ self.__combined_collection.signal_training_set.samples, self.__combined_collection.signal_training_set.parameters ] ) )
+            self.__combined_collection.signal_validation_set.addOutputs( model.predict( [ self.__combined_collection.signal_validation_set.samples, self.__combined_collection.signal_validation_set.parameters ] ) )
+            
+            self.__combined_collection.background_training_set.addOutputs( model.predict( [ self.__combined_collection.background_training_set.samples, self.__combined_collection.background_training_set.parameters ] ) )
+            self.__combined_collection.background_validation_set.addOutputs( model.predict( [ self.__combined_collection.background_validation_set.samples, self.__combined_collection.background_validation_set.parameters ] ) )
+        
+        elif self.__training_data_configuration['signal_parameters'] is not None:
+            self.__combined_collection.signal_training_set.addOutputs( model.predict( self.__combined_collection.signal_training_set.samplesParametric ) )
+            self.__combined_collection.signal_validation_set.addOutputs( model.predict( self.__combined_collection.signal_validation_set.samplesParametric ) )
+            
+            self.__combined_collection.background_training_set.addOutputs( model.predict( self.__combined_collection.background_training_set.samplesParametric ) )
+            self.__combined_collection.background_validation_set.addOutputs( model.predict( self.__combined_collection.background_validation_set.samplesParametric ) )
 
-        self.__background_collection.training_set.addOutputs( model.predict( self.__background_collection.training_set.samples ) )
-        self.__background_collection.validation_set.addOutputs( model.predict( self.__background_collection.validation_set.samples ) )
+        else :  
+            self.__combined_collection.signal_training_set.addOutputs( model.predict( self.__combined_collection.signal_training_set.samples ) )
+            self.__combined_collection.signal_validation_set.addOutputs( model.predict( self.__combined_collection.signal_validation_set.samples ) )
+            
+            self.__combined_collection.background_training_set.addOutputs( model.predict( self.__combined_collection.background_training_set.samples ) )
+            self.__combined_collection.background_validation_set.addOutputs( model.predict( self.__combined_collection.background_validation_set.samples ) )
 
     
     #train gradient boosted forest in XGBoost
     @registerTrainingFunction( GradientBoostedForestConfiguration )
     def trainGradientBoostedForestClassificationModel( self, configuration ):
 
-        training_data, validation_data = self.trainingAndValidationSets()
+        training_set = self.__combined_collection.training_set()
+        validation_set = self.__combined_collection.validation_set()
+
+        feature_names = self.__training_data_configuration['list_of_branches']
+        signal_parameters = self.__training_data_configuration['signal_parameters']
+        is_parametric = ( signal_parameters is not None )
+        if is_parametric:
+            feature_names += signal_parameters
     
         trainGradientBoostedForestClassificationModel(
-            training_data.samples, training_data.labels, train_weights = training_data.weights, 
-            feature_names = self.__feature_names,
+            train_data = ( training_set.samplesParametric if is_parametric else training_set.samples ),
+            train_labels = training_set.labels, 
+            train_weights = training_set.weights, 
+            feature_names = feature_names,
             model_name = configuration.name(),
             number_of_trees = configuration['number_of_trees'],
             learning_rate = configuration['learning_rate'],
@@ -204,7 +305,7 @@ class ModelTrainingSetup:
             colsample_bytree = configuration['colsample_bytree'],
             gamma = configuration['gamma'],
             alpha = configuration['alpha'],
-            number_of_threads = self.__number_of_threads
+            number_of_threads = self.__training_data_configuration[ 'number_of_threads' ]
         )
 
         #load trained classifier 
@@ -212,15 +313,72 @@ class ModelTrainingSetup:
         model.load_model( configuration.name() + '.bin' )
 
         #make xgboost DMatrices for predictions 
-        signal_training_matrix = xgb.DMatrix( self.__signal_collection.training_set.samples, label = self.__signal_collection.training_set.labels, nthread = self.__number_of_threads)
-        signal_validation_matrix = xgb.DMatrix( self.__signal_collection.validation_set.samples, label = self.__signal_collection.validation_set.labels, nthread = self.__number_of_threads)
+        signal_training_matrix = xgb.DMatrix( 
+            self.__combined_collection.signal_training_set.samplesParametric if is_parametric else self.__combined_collection.signal_training_set.samples,
+            label = self.__combined_collection.signal_training_set.labels, 
+            nthread = self.__training_data_configuration[ 'number_of_threads' ]
+        )
+        signal_validation_matrix = xgb.DMatrix(
+			self.__combined_collection.signal_validation_set.samplesParametric if is_parametric else self.__combined_collection.signal_validation_set.samples,
+            label = self.__combined_collection.signal_validation_set.labels, 
+            nthread = self.__training_data_configuration[ 'number_of_threads' ]
+        )
 
-        background_training_matrix = xgb.DMatrix( self.__background_collection.training_set.samples, label = self.__background_collection.training_set.labels, nthread = self.__number_of_threads)
-        background_validation_matrix = xgb.DMatrix( self.__background_collection.validation_set.samples, label = self.__background_collection.validation_set.labels, nthread = self.__number_of_threads)
+        background_training_matrix = xgb.DMatrix(
+            self.__combined_collection.background_training_set.samplesParametric if is_parametric else self.__combined_collection.background_training_set.samples,
+            label = self.__combined_collection.background_training_set.labels, 
+            nthread = self.__training_data_configuration[ 'number_of_threads' ]
+        )
+        background_validation_matrix = xgb.DMatrix(
+			self.__combined_collection.background_validation_set.samplesParametric if is_parametric else self.__combined_collection.background_validation_set.samples,
+            label = self.__combined_collection.background_validation_set.labels, 
+            nthread = self.__training_data_configuration[ 'number_of_threads' ]
+        )
         
         #make predictions 
-        self.__signal_collection.training_set.addOutputs( model.predict( signal_training_matrix ) )
-        self.__signal_collection.validation_set.addOutputs( model.predict( signal_validation_matrix ) )
+        self.__combined_collection.signal_training_set.addOutputs( model.predict( signal_training_matrix ) )
+        self.__combined_collection.signal_validation_set.addOutputs( model.predict( signal_validation_matrix ) )
 
-        self.__background_collection.training_set.addOutputs( model.predict( background_training_matrix ) )
-        self.__background_collection.validation_set.addOutputs( model.predict( background_validation_matrix ) )
+        self.__combined_collection.background_training_set.addOutputs( model.predict( background_training_matrix ) )
+        self.__combined_collection.background_validation_set.addOutputs( model.predict( background_validation_matrix ) )
+
+
+#some testing code 
+
+if __name__ == '__main__' :
+    configuration_file = __import__( 'input_ewkino' )
+    reader = TrainingDataReader( configuration_file )
+    setup = ModelTrainingSetup( reader )
+
+    #neural network
+    config_dict = { 'batch_size': 1024,
+        'dropout_all' : True,
+        'dropout_first' : False,
+        'dropout_rate' : 0.5,
+        'learning_rate' : 1,
+        'learning_rate_decay' : 1,
+        'number_of_hidden_layers' : 5,
+        'number_of_epochs' : 1,
+        'optimizer' : 'Nadam',
+        'units_per_layer': 128,
+        'activation' : 'prelu',
+        'batchnorm_first' : True,
+        'batchnorm_hidden' : True,
+        'batchnorm_before_activation' : True
+    }
+    config = newConfigurationFromDict( **config_dict )
+    setup.trainAndEvaluateModel( config )
+
+    #gradient boosted forest
+    config_dict = { 'alpha' : 0,
+        'colsample_bytree' : 1,
+        'gamma' : 0,
+        'learning_rate' : 0.05,
+        'max_depth' : 3,
+        'min_child_weight' : 1,
+        'number_of_trees' : 100,
+        'subsample' : 0.5
+    }
+
+    config = newConfigurationFromDict( **config_dict )
+    setup.trainAndEvaluateModel( config )

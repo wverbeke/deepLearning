@@ -25,8 +25,11 @@ def trainGradientBoostedForestClassificationModel( train_data, train_labels, tra
     
     #plot feature importance 
     xgb.plot_importance( booster )
-    plt.gcf().subplots_adjust( left = 0.15 )
-    plt.xlabel( 'Number of splittings', fontsize = 22 )
-    plt.ylabel( 'Feature', fontsize = 22 )
+    plt.gcf().subplots_adjust( left = 0.22 )
+    plt.xlabel( 'Number of splittings', fontsize = 16 )
+    plt.ylabel( 'Feature', fontsize = 16 )
     plt.savefig( 'feature_importance_' + model_name + '.pdf' )
     plt.clf()
+
+    #reset the figure margins for future plots
+    plt.gcf().subplots_adjust( left = 0.125 )
