@@ -54,9 +54,10 @@ class DataCollection:
         #avoid large numerical scales in the weights during training
         if weight_name is not None :
 
-            #scaling is strictly only necessary for training set 
+            #scaling is strictly only necessary for training set, HOWEVER it is better to also scale the validation set to have losses of the same scale
             weight_scale_factor = 1. / np.mean( self.__training_set.weights )
             self.__training_set.scaleWeights( weight_scale_factor )
+            self.__validation_set.scaleWeights( weight_scale_factor )
 
 
     @property

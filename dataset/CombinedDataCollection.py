@@ -9,8 +9,6 @@ from dataset.Dataset import concatenateAndShuffleDatasets
 from parametrization.ParameterGenerator import ParameterGenerator
 
 
-#def _numberOfBatches( dataset, batch_size ):
-#    return ( int( len( dataset )/batch_size ) + bool( len( dataset )%batch_size ) )
 def _numberOfBatches( dataset_length, batch_size ):
     return ( int( dataset_length / batch_size ) + bool( dataset_length % batch_size ) )
 
@@ -129,7 +127,7 @@ class CombinedDataCollection :
 
 
     def numberOfTestBatches( self, batch_size ):
-        combined_length = len( self.__signal_collection.validation_set ) + len( self.__background_collection.validation_set )
+        combined_length = len( self.__signal_collection.test_set ) + len( self.__background_collection.test_set )
         return combined_length
 
 
