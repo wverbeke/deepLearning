@@ -236,8 +236,6 @@ class ModelTrainingSetup:
                 training_generator = self.__combined_collection.trainingGenerator( configuration['batch_size'] )
                 validation_generator = self.__combined_collection.validationGenerator( configuration['batch_size'] )
 
-            #train_generator, train_steps_per_epoch, validation_generator, validation_steps_per_epoch, optimizer = optimizers.Nadam(), number_of_epochs = 20, number_of_threads = 1 )
-            
             model_builder.trainModelGenerators(
                 train_generator = training_generator,
                 train_steps_per_epoch = self.__combined_collection.numberOfTrainingBatches( configuration['batch_size'] ),
@@ -248,13 +246,11 @@ class ModelTrainingSetup:
                 number_of_threads = self.__training_data_configuration['number_of_threads']
             )
 
-            #rain_generator, train_steps_per_epoch, validation_generator, validation_steps_per_epoch, optimizer = optimizers.Nadam(), number_of_epochs = 20, number_of_threads = 1 )
-                
 
         #load trained classifier 
         #model = models.load_model( configuration.name() + '.h5', custom_objects = {'auc':auc})
         model = models.load_model( configuration.name() + '.h5' )
-        
+
         #make predictions 
         if self.__training_data_configuration['parameter_shortcut_connection']:
             self.__combined_collection.signal_training_set.addOutputs( model.predict( [ self.__combined_collection.signal_training_set.samples, self.__combined_collection.signal_training_set.parameters ] ) )
