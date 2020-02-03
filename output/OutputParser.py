@@ -39,6 +39,10 @@ class OutputParser:
 
             with open( train ) as trainingOutput:
                 AUC_line_counter = 0
+
+                #reset AUC file to avoid assigning an AUC to a file that does not contain one
+                AUC = 0
+
                 for line in trainingOutput.readlines():
 				
                     #expect the output file to contain one line in the following format: "validation set ROC integral (AUC) = X" 
