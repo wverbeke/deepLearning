@@ -153,7 +153,7 @@ class KerasClassifierTrainer():
         		patience = 10
         	),
         	callbacks.ModelCheckpoint(
-        		monitor = 'val_acc',
+        		monitor = 'val_loss',
         		filepath = self.__model_name + '.h5',
         		save_best_only = True
         	)
