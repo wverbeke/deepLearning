@@ -51,7 +51,7 @@ class OutputParser:
                         AUC_line_counter += 1
                         numbers_in_line = [ float(s) for s in line.split() if canConvertToFloat(s) ]
                         if len( numbers_in_line ) != 1 or AUC_line_counter > 1:
-                            raise IndexError('Expect to find exactly 1 number representing the ROC integral in {}, but found {}.'.format(trainingOutput_file_name, len( numbers_in_line) ) )
+                            raise IndexError('Expect to find exactly 1 number representing the ROC integral in {}, but found {}.'.format( train, len( numbers_in_line) ) )
                         AUC = numbers_in_line[0]
 
             #read model configuration from configuration file 
