@@ -5,6 +5,7 @@ matplotlib.use('Agg')
 #import necessary libraries 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 def plotKerasMetricComparison( training_history, model_name, metric, metric_label ):
@@ -22,7 +23,9 @@ def plotKerasMetricComparison( training_history, model_name, metric, metric_labe
     plt.ylabel( metric_label, fontsize = 16 )
     plt.ticklabel_format( style='sci', axis = 'y', scilimits = ( -2, 2 ) )
     plt.grid( True )
-    plt.savefig( metric + '_' + model_name + '.pdf' )
+    model_directory = os.path.dirname( model_name )
+    model_file_name = os.path.basename( model_name )
+    plt.savefig( '{}/{}_{}.pdf'.format( model_directory, metric, model_file_name ) )
     
     #clear canvas
     plt.clf()
@@ -83,7 +86,7 @@ def plotROC(sig_eff, bkg_eff, model_name):
     plt.xlabel( 'Signal efficiency', fontsize = 16 )
     plt.ylabel( 'Background rejection', fontsize = 16 )
     plt.grid(True)
-    plt.savefig('roc_' + model_name + '.pdf') 
+    plt.savefig( model_name + '.pdf') 
 
     #clear canvas
     plt.clf()
@@ -103,7 +106,7 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     outputs_background_training, weights_background_training, 
     outputs_signal_testing, weights_signal_testing, 
     outputs_background_testing, weights_background_testing,
-    model_name
+    model_name, log
     ):
 
     min_output = min( np.min(outputs_signal_training), np.min(outputs_background_training), np.min(outputs_signal_testing), np.min(outputs_background_testing ) )
@@ -114,13 +117,20 @@ def plotOutputShapeComparison( outputs_signal_training, weights_signal_training,
     addHist( outputs_signal_training, weights_signal_training, 30, min_output, max_output, 'Signal (training set)', color='blue')
     addHist( outputs_signal_testing, weights_signal_testing, 30, min_output, max_output, 'Signal (validation set)', color='green')
 
+    if( log ):
+        plt.yscale('log')
+    else :
+        plt.yscale('linear')
     plt.xlabel( 'Model output', fontsize = 16 )
     plt.ylabel( 'Normalized events', fontsize = 16 )
     plt.legend(ncol=2, prop={'size': 10})
 
     bottom, top = plt.ylim()
-    plt.ylim( 0,  top*1.2)
-    plt.savefig('shapeComparison_' + model_name + '.pdf')
+    if not log:
+        plt.ylim( 0,  top*1.2)
+    else:
+        plt.ylim( bottom, top*10 )
+    plt.savefig( model_name + '.pdf')
     plt.clf()
     
 
